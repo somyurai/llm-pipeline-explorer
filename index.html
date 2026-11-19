@@ -1,0 +1,3179 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM Pipeline Explorer — Visual & Mathematical Guide for CS Students</title>
+
+<!-- Libraries -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            50: '#eef2ff',
+            100: '#e0e7ff',
+            500: '#6366f1',
+            600: '#4f46e5',
+            700: '#4338ca',
+          },
+          dark: {
+            bg: '#090d16',
+            card: '#111827',
+            cardSub: '#1a2234',
+            border: '#1f293d',
+            muted: '#94a3b8'
+          }
+        },
+        fontFamily: {
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+          mono: ['JetBrains Mono', 'ui-monospace', 'monospace']
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  /* Custom scrollbars */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #0b1120; }
+  ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+  /* Token chip styles */
+  .chip {
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .chip:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+  }
+
+  /* Matrix cells */
+  .attn-cell {
+    transition: background-color 0.2s ease, transform 0.1s ease;
+  }
+  .attn-cell:hover {
+    transform: scale(1.15);
+    z-index: 10;
+  }
+
+  /* KaTeX formula readability */
+  .katex-display {
+    margin: 0.75em 0 !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.5em 0;
+  }
+
+  /* Glowing accents */
+  .glow-cyan { box-shadow: 0 0 20px -3px rgba(6, 182, 212, 0.3); }
+  .glow-indigo { box-shadow: 0 0 20px -3px rgba(99, 102, 241, 0.3); }
+  .glow-amber { box-shadow: 0 0 20px -3px rgba(245, 158, 11, 0.3); }
+</style>
+</head>
+
+<body class="bg-[#090d16] text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- TOP STICKY NAVBAR & PIPELINE MILESTONES -->
+  <header class="sticky top-0 z-50 bg-[#090d16]/90 backdrop-blur-md border-b border-slate-800 shadow-xl">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-indigo-600 via-cyan-500 to-emerald-400 flex items-center justify-center font-mono font-bold text-lg text-white shadow-lg shadow-indigo-500/30">
+          λ
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-lg tracking-tight text-white">LLM Pipeline Explorer</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono font-medium">CS Edition</span>
+          </div>
+          <p class="text-xs text-slate-400 hidden sm:block">From raw characters to attention matrices and generated probabilities</p>
+        </div>
+      </div>
+
+      <!-- Action Toggles -->
+      <div class="flex items-center space-x-2">
+        <button id="toggle-math-btn" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 transition flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          <span id="math-toggle-label">Math &amp; Code: ON</span>
+        </button>
+
+        <button onclick="document.getElementById('glossary-modal').classList.remove('hidden')" class="px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 transition flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          <span>CS Cheat Sheet</span>
+        </button>
+
+        <a href="#section-pipeline" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r from-indigo-600 to-cyan-600 text-white shadow-sm hover:from-indigo-500 hover:to-cyan-500 transition flex items-center gap-1.5">
+          <span>End-to-End Sandbox</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Chronological Timeline Nav -->
+    <div class="overflow-x-auto border-t border-slate-800/80 bg-slate-900/60 text-xs">
+      <div class="max-w-7xl mx-auto px-4 py-1.5 flex items-center space-x-1 sm:space-x-2 min-w-max">
+        <span class="text-slate-500 font-mono text-[11px] uppercase mr-2 tracking-wider">Chronology:</span>
+        <a href="#section-tokenizer" class="nav-step px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition flex items-center gap-1">
+          <span class="w-4 h-4 rounded-full bg-indigo-500/20 text-indigo-400 inline-flex items-center justify-center font-mono text-[10px]">1</span>
+          <span>Tokenizer</span>
+        </a>
+        <span class="text-slate-600">→</span>
+        <a href="#section-embeddings" class="nav-step px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition flex items-center gap-1">
+          <span class="w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-400 inline-flex items-center justify-center font-mono text-[10px]">2</span>
+          <span>Embeddings &amp; 3D</span>
+        </a>
+        <span class="text-slate-600">→</span>
+        <a href="#section-vectors" class="nav-step px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition flex items-center gap-1">
+          <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 inline-flex items-center justify-center font-mono text-[10px]">3</span>
+          <span>Vectors &amp; Cosine</span>
+        </a>
+        <span class="text-slate-600">→</span>
+        <a href="#section-pos-encoding" class="nav-step px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition flex items-center gap-1">
+          <span class="w-4 h-4 rounded-full bg-amber-500/20 text-amber-400 inline-flex items-center justify-center font-mono text-[10px]">4</span>
+          <span>Positional Encoding</span>
+        </a>
+        <span class="text-slate-600">→</span>
+        <a href="#section-attention" class="nav-step px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition flex items-center gap-1">
+          <span class="w-4 h-4 rounded-full bg-purple-500/20 text-purple-400 inline-flex items-center justify-center font-mono text-[10px]">5</span>
+          <span>Self-Attention</span>
+        </a>
+        <span class="text-slate-600">→</span>
+        <a href="#section-residual" class="nav-step px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition flex items-center gap-1">
+          <span class="w-4 h-4 rounded-full bg-rose-500/20 text-rose-400 inline-flex items-center justify-center font-mono text-[10px]">6</span>
+          <span>Residual &amp; FFN</span>
+        </a>
+        <span class="text-slate-600">→</span>
+        <a href="#section-softmax" class="nav-step px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition flex items-center gap-1">
+          <span class="w-4 h-4 rounded-full bg-blue-500/20 text-blue-400 inline-flex items-center justify-center font-mono text-[10px]">7</span>
+          <span>Logits &amp; Softmax</span>
+        </a>
+        <span class="text-slate-600">→</span>
+        <a href="#section-sampling" class="nav-step px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition flex items-center gap-1">
+          <span class="w-4 h-4 rounded-full bg-teal-500/20 text-teal-400 inline-flex items-center justify-center font-mono text-[10px]">8</span>
+          <span>Sampling &amp; Decoding</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-12">
+    <!-- HERO / ORIENTATION -->
+    <div class="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-b from-slate-900 via-slate-900/90 to-[#090d16] p-6 sm:p-10 shadow-2xl">
+      <div class="absolute -top-24 -right-24 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="relative z-10 max-w-3xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-mono font-medium mb-4">
+          <span>CS 101 → Transformer Core Internals</span>
+        </div>
+        <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white mb-4 leading-tight">
+          How Text Becomes Thought: <br/>
+          <span class="bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">The Chronological LLM Pipeline</span>
+        </h1>
+        <p class="text-slate-300 text-base sm:text-lg leading-relaxed mb-6">
+          Large Language Models are not magical black boxes. They are rigorous, multi-stage linear algebra pipelines that convert discrete human characters into continuous geometric vectors, transform them via self-attention, and sample next-token probability distributions.
+        </p>
+
+        <!-- Quick navigation chips -->
+        <div class="flex flex-wrap items-center gap-2 pt-2 text-xs">
+          <span class="text-slate-400 font-medium">Quick Jumps:</span>
+          <a href="#section-tokenizer" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">Tokenizer &amp; BPE</a>
+          <a href="#section-embeddings" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">3D Semantic Vectors</a>
+          <a href="#section-vectors" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">Cosine Similarity Math</a>
+          <a href="#section-attention" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">Attention Heatmaps</a>
+          <a href="#section-sampling" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">Temperature &amp; Top-P</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- STAGE 1: TOKENIZER & SUBWORD ARCHITECTURE -->
+    <!-- ================================================================= -->
+    <section id="section-tokenizer" class="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 sm:p-8 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 font-mono text-sm font-bold flex items-center justify-center border border-indigo-500/30">1</span>
+            <h2 class="text-2xl font-bold text-white tracking-tight">Stage 1: Tokenizer &amp; Subword Segmentation</h2>
+          </div>
+          <p class="text-sm text-slate-400 mt-1">Transforming raw Unicode character streams into discrete integer token IDs ($\mathbb{S} 	o \mathbb{Z}^+$)</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-400 font-mono">Algorithm:</span>
+          <select id="token-algorithm-select" class="text-xs bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-indigo-500">
+            <option value="wordpiece" selected>WordPiece (BERT style, "##")</option>
+            <option value="bpe">Byte-Pair Encoding (GPT style, "Ġ")</option>
+            <option value="char">Character-level baseline</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Intuition Box -->
+      <div class="rounded-xl bg-slate-800/50 border border-slate-700/60 p-4 mb-6 text-sm text-slate-300 leading-relaxed">
+        <p><strong class="text-indigo-300 font-semibold">CS Intuition:</strong> Computers cannot directly multiply characters like <code class="text-indigo-200 bg-indigo-950/60 px-1 py-0.5 rounded font-mono">'c'</code>, <code class="text-indigo-200 bg-indigo-950/60 px-1 py-0.5 rounded font-mono">'a'</code>, <code class="text-indigo-200 bg-indigo-950/60 px-1 py-0.5 rounded font-mono">'t'</code>. An LLM's first layer is an embedding lookup table indexed by integers. If we used whole words, our vocabulary would explode ($>10^6$ words) and fail on typos; if we used raw characters, sequences would be 4–5x longer, blowing up the $O(N^2)$ attention budget. <strong>Subword tokenization (BPE / WordPiece)</strong> strikes the optimal trade-off.</p>
+      </div>
+
+      <!-- Grid: Training Corpus & Vocab Builder -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Left: Corpus & Builder -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <label for="corpus" class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+              <span>Training Corpus (Sentences to Learn Vocabulary)</span>
+            </label>
+            <button id="reset-corpus-btn" class="text-xs text-slate-400 hover:text-indigo-300 transition">Reset Corpus</button>
+          </div>
+          <textarea id="corpus" rows="6" class="w-full bg-slate-950/80 border border-slate-700 rounded-xl p-3 text-sm font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition resize-y">The cat sat on the mat.
+The dog sat on the rug.
+The cat saw the dog!
+A dog and a cat can be friends.
+Do you like the cat?
+I don't like the rain, but I like the sun.</textarea>
+
+          <div class="flex flex-wrap gap-2">
+            <button id="build-vocab-btn" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm transition shadow-lg shadow-indigo-600/25 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+              <span>Build Vocabulary</span>
+            </button>
+            <button id="step-bpe-btn" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs border border-slate-700 transition flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <span>Inspect BPE Merge History</span>
+            </button>
+          </div>
+
+          <!-- Vocab Slider Box -->
+          <div id="vocab-slider-box" class="rounded-xl bg-slate-950/60 border border-slate-800 p-4 space-y-2" style="display:none;">
+            <div class="flex items-center justify-between text-xs">
+              <label for="vocab-slider" class="font-semibold text-slate-300">Words kept in vocabulary:</label>
+              <span id="vocab-slider-value" class="font-mono text-indigo-400 font-bold"></span>
+            </div>
+            <input type="range" id="vocab-slider" min="1" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+            <p class="text-xs text-slate-400 leading-normal">
+              <strong>Interactive slider:</strong> Drag left to shrink vocabulary. Dropped words fall back to subword pieces (<code class="text-indigo-300">##s</code>, <code class="text-indigo-300">##ing</code>) or single letters, preserving full expressivity without <code class="text-amber-400">[UNK]</code>!
+            </p>
+          </div>
+        </div>
+
+        <!-- Right: Vocabulary Output Table -->
+        <div class="flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-semibold text-slate-200">Constructed Vocabulary Table</span>
+            <input type="text" id="vocab-search" placeholder="Filter tokens..." class="text-xs bg-slate-950/70 border border-slate-700 rounded-lg px-2.5 py-1 text-slate-300 w-36 focus:outline-none focus:border-indigo-500">
+          </div>
+          <div id="vocab-output" class="flex-1 min-h-[220px]">
+            <div class="h-56 rounded-xl border border-dashed border-slate-800 flex flex-col items-center justify-center text-slate-500 text-xs p-4 text-center">
+              <svg class="w-8 h-8 mb-2 opacity-50 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+              <span>Click "Build Vocabulary" to tokenize the corpus and compute token frequency statistics.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live BPE Merges Modal / Container -->
+      <div id="bpe-merges-box" class="hidden rounded-xl bg-slate-950/90 border border-cyan-500/30 p-4 mb-8 space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span class="text-xs font-mono font-bold text-cyan-300 uppercase tracking-wider">Byte-Pair Encoding (BPE) Iterative Merge Tree</span>
+          </div>
+          <button onclick="document.getElementById('bpe-merges-box').classList.add('hidden')" class="text-slate-400 hover:text-white text-xs">✕ Close</button>
+        </div>
+        <p class="text-xs text-slate-300">
+          BPE starts with all individual characters. In each iteration, it counts all adjacent pairs and merges the most frequent pair into a single new subword token:
+        </p>
+        <div id="bpe-tree-content" class="font-mono text-xs text-slate-300 max-h-48 overflow-y-auto space-y-1.5 p-2 bg-slate-900 rounded-lg border border-slate-800">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Interactive Tokenizer Section -->
+      <div class="border-t border-slate-800 pt-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <label for="encode-input" class="text-sm font-semibold text-slate-200">
+            Encode a Sentence (Interactive Tokenization Sandbox)
+          </label>
+          <div class="flex flex-wrap items-center gap-1.5 text-xs">
+            <span class="text-slate-500 font-mono text-[11px]">Presets:</span>
+            <button class="preset-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700" data-text="The dogs liked the sunny zebra.">Dogs &amp; Zebra</button>
+            <button class="preset-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700" data-text="Tokenization is fascinating in 2026!">Numbers &amp; Punctuation</button>
+            <button class="preset-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700" data-text="strawberry has multiple r characters">Strawberry problem</button>
+            <button class="preset-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700" data-text="128 + 256 = 384">Arithmetic</button>
+          </div>
+        </div>
+
+        <div class="flex gap-2 mb-4">
+          <textarea id="encode-input" rows="2" class="flex-1 bg-slate-950/80 border border-slate-700 rounded-xl p-3 text-sm font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition resize-y">The dogs liked the sunny zebra.</textarea>
+          <button id="tokenize-btn" class="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-semibold text-sm transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-1.5 self-start">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            <span>Tokenize</span>
+          </button>
+        </div>
+
+        <!-- Output Chip Display -->
+        <div id="token-output" class="min-h-[80px]"></div>
+      </div>
+
+      <!-- CS Deep Dive (Math & Code) -->
+      <div class="cs-peek mt-6 rounded-xl bg-slate-950 border border-indigo-900/40 p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+          <span class="text-xs font-mono font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            CS Deep Dive: Mathematical Formulation &amp; PyTorch Implementation
+          </span>
+          <span class="text-[11px] font-mono text-slate-500">O(N) Tokenizer Complexity</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div>
+            <h4 class="font-semibold text-slate-200 mb-1">Mathematical Mapping:</h4>
+            <p class="text-slate-400 mb-2">
+              Given an input string $S \in \Sigma^*$ and a vocabulary dictionary $V = \{w_0, w_1, \dots, w_{|V|-1}\}$, the tokenizer performs a greedy subword segmentation $S \mapsto [t_1, t_2, \dots, t_T]$ such that each $t_i \in V$ and:
+            </p>
+            <div class="font-mono bg-slate-900 p-2.5 rounded border border-slate-800 text-slate-300">
+              $$	ext{argmin}_{T} \sum_{i=1}^T 	ext{cost}(t_i) \quad 	ext{s.t.} \quad igoplus_{i=1}^T t_i = S$$
+            </div>
+            <p class="text-slate-400 mt-2">
+              Each token is mapped to an index integer: $ID(t_i) \in \{0, 1, \dots, |V|-1\}$.
+            </p>
+          </div>
+
+          <div>
+            <h4 class="font-semibold text-slate-200 mb-1">Production PyTorch (tiktoken / transformers):</h4>
+            <pre class="bg-slate-900 text-indigo-300 p-2.5 rounded border border-slate-800 font-mono text-[11px] overflow-x-auto"><code>import tiktoken
+
+# Load GPT-4 BPE Tokenizer (100k vocabulary)
+enc = tiktoken.get_encoding("cl100k_base")
+
+tokens = enc.encode("The dogs liked the sunny zebra.")
+print("Token IDs:", tokens)
+# [9906, 12384, 8437, 279, 43904, 87405, 13]
+
+decoded = [enc.decode_single_token_bytes(t) for t in tokens]
+print("Tokens:", decoded)</code></pre>
+          </div>
+        </div>
+
+        <!-- Tokenizer Quirks Alert -->
+        <div class="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-xs text-amber-300/90 flex gap-2.5">
+          <svg class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <div>
+            <strong class="font-semibold text-amber-200">The "Strawberry Problem" &amp; Tokenization Blindness:</strong>
+            LLMs don't see characters; they only see token integers. The word <code class="font-mono bg-amber-950/60 px-1 py-0.5 rounded">"strawberry"</code> is encoded as a single or two tokens (<code class="font-mono">[straw, berry]</code>). When asked "How many 'r's are in strawberry?", the LLM never sees the 3 individual 'r' characters unless forced through character-level spelling chains of thought!
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- STAGE 2: EMBEDDINGS & 3D HIGH-DIMENSIONAL SEMANTIC SPACE -->
+    <!-- ================================================================= -->
+    <section id="section-embeddings" class="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 sm:p-8 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 font-mono text-sm font-bold flex items-center justify-center border border-cyan-500/30">2</span>
+            <h2 class="text-2xl font-bold text-white tracking-tight">Stage 2: Continuous Embeddings &amp; High-Dimensional Vector Space</h2>
+          </div>
+          <p class="text-sm text-slate-400 mt-1">Mapping discrete token IDs into continuous semantic vectors: $E: \mathbb{Z}^+ 	o \mathbb{R}^{d_{	ext{model}}}$</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs px-2.5 py-1 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 font-mono">
+            Interactive Dimension: d = 64 → 3D PCA
+          </span>
+        </div>
+      </div>
+
+      <!-- Intuition Box -->
+      <div class="rounded-xl bg-slate-800/50 border border-slate-700/60 p-4 mb-6 text-sm text-slate-300 leading-relaxed">
+        <p><strong class="text-cyan-300 font-semibold">CS Intuition:</strong> An integer ID like <code class="text-cyan-200 bg-cyan-950/60 px-1 py-0.5 rounded font-mono">14</code> has no geometric meaning: token <code class="text-cyan-200 bg-cyan-950/60 px-1 py-0.5 rounded font-mono">15</code> isn't "one unit closer" in meaning than token <code class="text-cyan-200 bg-cyan-950/60 px-1 py-0.5 rounded font-mono">900</code>. To perform calculus and neural processing, we look up each token in an <strong>Embedding Matrix</strong> $E \in \mathbb{R}^{|V| 	imes d_{	ext{model}}}$. In this space, words with related meanings (like <em class="text-cyan-200">cat</em> and <em class="text-cyan-200">kitten</em>) point in nearly identical directions!</p>
+      </div>
+
+      <!-- Semantic Vector Arithmetic Playground -->
+      <div class="rounded-xl bg-slate-950/80 border border-cyan-500/20 p-5 mb-8">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+            <h3 class="text-sm font-bold text-slate-100 uppercase tracking-wider font-mono">Semantic Vector Arithmetic Playground</h3>
+          </div>
+          <div class="flex flex-wrap items-center gap-1.5 text-xs">
+            <span class="text-slate-400 font-mono text-[11px]">Analogies:</span>
+            <button class="analogy-btn px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-mono" data-a="king" data-b="man" data-c="woman">King - Man + Woman</button>
+            <button class="analogy-btn px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-mono" data-a="paris" data-b="france" data-c="germany">Paris - France + Germany</button>
+            <button class="analogy-btn px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 font-mono" data-a="puppy" data-b="dog" data-c="cat">Puppy - Dog + Cat</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-center mb-4">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1 font-mono">Vector A (+)</label>
+            <input type="text" id="vec-a" value="king" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-cyan-300 font-mono focus:border-cyan-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1 font-mono">Vector B (-)</label>
+            <input type="text" id="vec-b" value="man" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-rose-300 font-mono focus:border-cyan-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1 font-mono">Vector C (+)</label>
+            <input type="text" id="vec-c" value="woman" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-emerald-300 font-mono focus:border-cyan-500 focus:outline-none">
+          </div>
+          <div class="pt-5">
+            <button id="calc-analogy-btn" class="w-full px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-semibold transition shadow-md shadow-cyan-600/30">
+              Compute $ec{v}_{	ext{target}}$
+            </button>
+          </div>
+        </div>
+
+        <!-- Analogy Result Bar -->
+        <div id="analogy-result-box" class="p-3 bg-slate-900 rounded-lg border border-slate-800 text-xs text-slate-300">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Main Embeddings & 3D Plot Area -->
+      <div class="space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <label for="sentences" class="text-sm font-semibold text-slate-200">
+            Corpus Sentences (One per line — Projected into 3D Space via PCA)
+          </label>
+          <div class="flex items-center gap-2">
+            <button id="preset-sentences-btn" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">Load Diverse Clusters</button>
+          </div>
+        </div>
+
+        <textarea id="sentences" rows="8" class="w-full bg-slate-950/80 border border-slate-700 rounded-xl p-3 text-sm font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition resize-y">The cat sat on the mat.
+A kitten rested on the rug.
+The bat sat on the mat.
+I love programming in Python.
+Coding in Python is my passion.
+Pythons are large snakes.
+The stock market crashed today.
+Share prices fell sharply.
+Astronomers observe distant galaxies.
+Telescopes reveal cosmic wonders.</textarea>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <button id="embed-btn" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-semibold text-sm transition shadow-lg shadow-cyan-600/30 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            <span>Embed and Plot in 3D</span>
+          </button>
+          <div id="embed-status" class="text-xs text-amber-400 font-mono"></div>
+        </div>
+
+        <!-- 3D Plot Container -->
+        <div class="relative rounded-2xl bg-slate-950 border border-slate-800 p-2 overflow-hidden shadow-2xl">
+          <div class="absolute top-4 left-4 z-10 flex items-center gap-2 bg-slate-900/80 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            <span class="text-slate-300 font-mono font-medium">3D PCA Latent Projection (Drag to Rotate, Scroll to Zoom)</span>
+          </div>
+          <div id="plot" class="w-full h-[540px] rounded-xl"></div>
+          <div id="pca-stats-bar" class="px-4 py-2 border-t border-slate-800/80 bg-slate-900/50 flex flex-wrap items-center justify-between text-xs font-mono text-slate-400">
+            <span>Dimensionality Reduction: 64D Trigram-Semantic Space → 3 Principal Axes</span>
+            <span id="pca-variance-text">Variance explained: PC1 ~42%, PC2 ~24%, PC3 ~16%</span>
+          </div>
+        </div>
+
+        <!-- Closest Pairs Output Area -->
+        <div id="pairs-output" class="rounded-xl bg-slate-950/60 border border-slate-800 p-4"></div>
+
+        <!-- Try your own word or sentence -->
+        <div class="rounded-xl bg-gradient-to-r from-amber-500/10 via-slate-900 to-indigo-500/10 border border-amber-500/30 p-5 space-y-4">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-amber-400 animate-ping"></span>
+            <h3 class="text-base font-bold text-white tracking-tight">Interactive Probe: Inject Your Own Word or Sentence</h3>
+          </div>
+          <p class="text-xs text-slate-300">
+            Type any custom text. Watch it transform from raw characters into token IDs, then into a 64-dimensional dense vector, projected dynamically as a <strong class="text-amber-400">glowing neon orange beacon</strong> in the 3D space with real-time cosine distance ranks!
+          </p>
+
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input type="text" id="new-word" placeholder="e.g. puppy, or: Machine learning models optimize parameters." class="flex-1 bg-slate-950 border border-amber-500/40 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 font-mono">
+            <button id="add-word-btn" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-bold text-sm transition shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+              <span>Tokenize, Embed &amp; Plot</span>
+            </button>
+          </div>
+
+          <div id="new-word-output"></div>
+        </div>
+      </div>
+
+      <!-- CS Deep Dive (Math & Code) -->
+      <div class="cs-peek mt-6 rounded-xl bg-slate-950 border border-cyan-900/40 p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+          <span class="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            CS Deep Dive: PCA Derivation &amp; PyTorch nn.Embedding
+          </span>
+          <span class="text-[11px] font-mono text-slate-500">Eigenvalue Power Iteration</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div>
+            <h4 class="font-semibold text-slate-200 mb-1">Principal Component Analysis (PCA):</h4>
+            <p class="text-slate-400 mb-2">
+              To project $N$ data vectors $\mathbf{x}_i \in \mathbb{R}^d$ down to 3D, we center the matrix $X_c = X - \mu$ and compute the Sample Covariance Matrix:
+            </p>
+            <div class="font-mono bg-slate-900 p-2.5 rounded border border-slate-800 text-slate-300">
+              $$C = rac{1}{N-1} X_c^T X_c \in \mathbb{R}^{d 	imes d}$$
+            </div>
+            <p class="text-slate-400 mt-2">
+              We find the top 3 eigenvectors $\mathbf{v}_1, \mathbf{v}_2, \mathbf{v}_3$ via power iteration ($C \mathbf{v} = \lambda \mathbf{v}$) with deflation: $C_{k+1} = C_k - \lambda_k \mathbf{v}_k \mathbf{v}_k^T$. Each point $(x, y, z) = (\mathbf{x} \cdot \mathbf{v}_1, \mathbf{x} \cdot \mathbf{v}_2, \mathbf{x} \cdot \mathbf{v}_3)$.
+            </p>
+          </div>
+
+          <div>
+            <h4 class="font-semibold text-slate-200 mb-1">PyTorch Embedding Layer:</h4>
+            <pre class="bg-slate-900 text-cyan-300 p-2.5 rounded border border-slate-800 font-mono text-[11px] overflow-x-auto"><code>import torch
+import torch.nn as nn
+
+# Vocabulary size = 50,000, Embedding dimension = 768
+vocab_size, d_model = 50000, 768
+embedding_layer = nn.Embedding(vocab_size, d_model)
+
+# Forward pass: token IDs [batch_size, seq_len]
+token_ids = torch.tensor([[101, 2054, 2003, 102]])
+vectors = embedding_layer(token_ids)
+
+print(vectors.shape)
+# Output: torch.Size([1, 4, 768])</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- STAGE 3: VECTOR MATH & COSINE SIMILARITY -->
+    <!-- ================================================================= -->
+    <section id="section-vectors" class="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 sm:p-8 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 font-mono text-sm font-bold flex items-center justify-center border border-emerald-500/30">3</span>
+            <h2 class="text-2xl font-bold text-white tracking-tight">Stage 3: Vector Geometry &amp; Cosine Similarity</h2>
+          </div>
+          <p class="text-sm text-slate-400 mt-1">Measuring semantic affinity via the normalized inner product: $\cos(	heta) = rac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{u}\|_2 \|\mathbf{v}\|_2}$</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-mono">
+            Metric Range: [-1.0, +1.0]
+          </span>
+        </div>
+      </div>
+
+      <!-- Intuition Box -->
+      <div class="rounded-xl bg-slate-800/50 border border-slate-700/60 p-4 mb-6 text-sm text-slate-300 leading-relaxed">
+        <p><strong class="text-emerald-300 font-semibold">CS Intuition:</strong> In high-dimensional spaces ($d=768$ or $4096$), Euclidean distance suffers from the <em>Curse of Dimensionality</em> (all points become equidistant) and is biased by vector magnitude (a longer sentence has larger norm). <strong>Cosine similarity</strong> isolates purely the <em>angular orientation</em> of the vectors, making it the fundamental currency of attention queries, vector databases (RAG), and semantic retrieval!</p>
+      </div>
+
+      <!-- Interactive 2D Vector Compass -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+        <!-- Canvas Visualizer (7 cols) -->
+        <div class="lg:col-span-7 rounded-2xl bg-slate-950 border border-slate-800 p-4 flex flex-col items-center">
+          <div class="w-full flex items-center justify-between mb-2 text-xs">
+            <span class="font-mono text-slate-400">Interactive Vector Compass (Drag heads or use sliders)</span>
+            <div class="flex items-center gap-3 font-mono">
+              <span class="flex items-center gap-1 text-cyan-400"><span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> $\mathbf{u}$</span>
+              <span class="flex items-center gap-1 text-emerald-400"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> $\mathbf{v}$</span>
+            </div>
+          </div>
+
+          <div class="relative w-full flex justify-center">
+            <canvas id="vector-canvas" width="400" height="340" class="cursor-crosshair rounded-xl bg-[#070b12] border border-slate-800/80 shadow-inner"></canvas>
+          </div>
+
+          <!-- Quick Presets -->
+          <div class="w-full flex flex-wrap items-center justify-center gap-1.5 mt-3 text-xs">
+            <span class="text-slate-500 font-mono text-[11px]">Angle Presets:</span>
+            <button class="angle-preset px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono" data-deg="0">Parallel (0°, cos=1.0)</button>
+            <button class="angle-preset px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono" data-deg="45">Acute (45°, cos≈0.71)</button>
+            <button class="angle-preset px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono" data-deg="90">Orthogonal (90°, cos=0.0)</button>
+            <button class="angle-preset px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono" data-deg="135">Obtuse (135°, cos≈-0.71)</button>
+            <button class="angle-preset px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono" data-deg="180">Opposite (180°, cos=-1.0)</button>
+          </div>
+        </div>
+
+        <!-- Math Cards & Sliders (5 cols) -->
+        <div class="lg:col-span-5 flex flex-col justify-between space-y-4">
+          <!-- Live Sliders -->
+          <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-4 space-y-3">
+            <div>
+              <div class="flex justify-between text-xs font-mono mb-1">
+                <span class="text-cyan-400">Vector $\mathbf{u}$ Angle ($	heta_u$):</span>
+                <span id="slider-u-val" class="text-slate-300">30°</span>
+              </div>
+              <input type="range" id="slider-u" min="0" max="360" value="30" class="w-full h-1.5 bg-slate-800 rounded appearance-none accent-cyan-500 cursor-pointer">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-mono mb-1">
+                <span class="text-emerald-400">Vector $\mathbf{v}$ Angle ($	heta_v$):</span>
+                <span id="slider-v-val" class="text-slate-300">75°</span>
+              </div>
+              <input type="range" id="slider-v" min="0" max="360" value="75" class="w-full h-1.5 bg-slate-800 rounded appearance-none accent-emerald-500 cursor-pointer">
+            </div>
+          </div>
+
+          <!-- Step-by-Step Live Calculations -->
+          <div class="rounded-xl bg-slate-950/90 border border-slate-800 p-4 space-y-2.5 text-xs font-mono">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+              <span class="text-slate-400">Subtended Angle ($\Delta	heta$):</span>
+              <span id="calc-angle" class="text-slate-100 font-bold text-sm">45.0°</span>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400">Inner Product ($\mathbf{u} \cdot \mathbf{v}$):</span>
+              <span id="calc-dot" class="text-slate-200">0.707</span>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400">Norms ($\|\mathbf{u}\|, \|\mathbf{v}\|$):</span>
+              <span id="calc-norms" class="text-slate-200">1.000, 1.000</span>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400">Euclidean Distance ($L_2$):</span>
+              <span id="calc-euclid" class="text-slate-200">0.765</span>
+            </div>
+
+            <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
+              <span class="text-sm font-bold text-white">Cosine Similarity:</span>
+              <span id="calc-cosine" class="text-lg font-extrabold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded border border-emerald-500/30">+0.707</span>
+            </div>
+
+            <div id="cosine-status-badge" class="mt-2 text-center py-1 rounded bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
+              Correlated Semantic Direction
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Full Sentences N x N Similarity Matrix Heatmap -->
+      <div class="border-t border-slate-800 pt-6">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Full Corpus Similarity Matrix ($N 	imes N$ Heatmap)</h3>
+            <p class="text-xs text-slate-400">Pairwise cosine similarities computed across all corpus sentences</p>
+          </div>
+          <button id="recompute-matrix-btn" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono border border-slate-700 transition">
+            Refresh Matrix
+          </button>
+        </div>
+
+        <div id="similarity-matrix-container" class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/80 p-2">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- CS Deep Dive (Math & Code) -->
+      <div class="cs-peek mt-6 rounded-xl bg-slate-950 border border-emerald-900/40 p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+          <span class="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            CS Deep Dive: Cosine vs Euclidean &amp; Vector Databases
+          </span>
+          <span class="text-[11px] font-mono text-slate-500">Curse of Dimensionality</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div>
+            <h4 class="font-semibold text-slate-200 mb-1">Normalized Inner Product Equivalence:</h4>
+            <p class="text-slate-400 mb-2">
+              If all vectors are $L_2$-normalized such that $\|\mathbf{u}\|_2 = 1$ and $\|\mathbf{v}\|_2 = 1$, then cosine similarity simplifies directly to the pure dot product:
+            </p>
+            <div class="font-mono bg-slate-900 p-2.5 rounded border border-slate-800 text-slate-300">
+              $$\cos(	heta) = \mathbf{u} \cdot \mathbf{v} = \sum_{i=1}^d u_i v_i$$
+            </div>
+            <p class="text-slate-400 mt-2">
+              Furthermore, Euclidean distance squared relates linearly: $\|\mathbf{u} - \mathbf{v}\|_2^2 = 2 - 2 \cos(	heta)$. High cosine similarity corresponds directly to minimum Euclidean distance on the unit hypersphere.
+            </p>
+          </div>
+
+          <div>
+            <h4 class="font-semibold text-slate-200 mb-1">PyTorch GPU Batch Cosine Similarity:</h4>
+            <pre class="bg-slate-900 text-emerald-300 p-2.5 rounded border border-slate-800 font-mono text-[11px] overflow-x-auto"><code>import torch
+import torch.nn.functional as F
+
+# Two batches of 768-dimensional embeddings
+u = torch.randn(10, 768)
+v = torch.randn(10, 768)
+
+# Compute cosine similarity across dim=-1
+sim = F.cosine_similarity(u, v, dim=-1)
+print("Cosine scores:", sim)
+
+# Efficient Matrix Multiplication for N x N:
+u_norm = F.normalize(u, p=2, dim=-1)
+v_norm = F.normalize(v, p=2, dim=-1)
+similarity_matrix = torch.matmul(u_norm, v_norm.T)</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- STAGE 4: POSITIONAL ENCODING (INJECTING ORDER INTO SETS) -->
+    <!-- ================================================================= -->
+    <section id="section-pos-encoding" class="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 sm:p-8 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 font-mono text-sm font-bold flex items-center justify-center border border-amber-500/30">4</span>
+            <h2 class="text-2xl font-bold text-white tracking-tight">Stage 4: Positional Encoding (Breaking Permutation Invariance)</h2>
+          </div>
+          <p class="text-sm text-slate-400 mt-1">Injecting sequential temporal coordinates: $\mathbf{x}_{	ext{final}} = \mathbf{e}_{	ext{token}} + \mathbf{p}_{	ext{pos}}$</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs px-2.5 py-1 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 font-mono">
+            Sinusoidal &amp; RoPE
+          </span>
+        </div>
+      </div>
+
+      <!-- Intuition Box -->
+      <div class="rounded-xl bg-slate-800/50 border border-slate-700/60 p-4 mb-6 text-sm text-slate-300 leading-relaxed">
+        <p><strong class="text-amber-300 font-semibold">CS Intuition:</strong> Unlike Recurrent Neural Networks (RNNs) which process tokens one step at a time ($t=1, 2, 3\dots$), the Transformer processes all tokens in parallel. Because the Self-Attention equation is a symmetric set operation, <em>"Dog bites man"</em> and <em>"Man bites dog"</em> would have identical representations without position! <strong>Positional encodings</strong> inject distinct frequency vectors so the model knows who did what to whom.</p>
+      </div>
+
+      <!-- Interactive Frequency Waves & Matrix Heatmap -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+        <!-- Frequency Waves Canvas (7 cols) -->
+        <div class="lg:col-span-7 rounded-2xl bg-slate-950 border border-slate-800 p-4 flex flex-col">
+          <div class="flex items-center justify-between mb-2 text-xs">
+            <span class="font-mono text-slate-400">Sinusoidal Waves across Dimensions (Higher dims = Lower frequencies)</span>
+            <span id="pos-inspect-label" class="font-mono text-amber-400 text-xs font-semibold">Position: pos = 0</span>
+          </div>
+
+          <div class="relative w-full flex-1 flex items-center justify-center min-h-[260px]">
+            <canvas id="pos-wave-canvas" width="560" height="260" class="w-full rounded-xl bg-[#070b12] border border-slate-800/80"></canvas>
+          </div>
+
+          <!-- Controls -->
+          <div class="grid grid-cols-2 gap-4 mt-3 text-xs font-mono">
+            <div>
+              <div class="flex justify-between text-slate-400 mb-1">
+                <span>Sequence Position ($pos$):</span>
+                <span id="pos-slider-val" class="text-amber-300 font-bold">4</span>
+              </div>
+              <input type="range" id="pos-slider" min="0" max="32" value="4" class="w-full h-1.5 bg-slate-800 rounded appearance-none accent-amber-500 cursor-pointer">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-slate-400 mb-1">
+                <span>Wave Dimension Index ($2i$):</span>
+                <span id="dim-slider-val" class="text-amber-300 font-bold">0 (High Freq)</span>
+              </div>
+              <input type="range" id="dim-slider" min="0" max="15" value="0" class="w-full h-1.5 bg-slate-800 rounded appearance-none accent-amber-500 cursor-pointer">
+            </div>
+          </div>
+        </div>
+
+        <!-- Positional Encoding Matrix Heatmap (5 cols) -->
+        <div class="lg:col-span-5 rounded-2xl bg-slate-950 border border-slate-800 p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2 text-xs">
+              <span class="font-mono text-slate-400">Positional Matrix Heatmap $PE \in \mathbb{R}^{L 	imes d}$</span>
+              <span class="text-[11px] text-slate-500 font-mono">L=16, d=32</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-3">
+              Vertical axis: Token position $0 \dots L-1$. Horizontal axis: Embedding dimensions $0 \dots d-1$. Note how frequencies smoothly decrease from left to right.
+            </p>
+          </div>
+
+          <div id="pe-matrix-container" class="rounded-xl border border-slate-800 bg-slate-900/60 p-2 overflow-hidden flex justify-center">
+            <canvas id="pe-heatmap-canvas" width="340" height="200" class="rounded"></canvas>
+          </div>
+
+          <!-- Vector Addition Equation Card -->
+          <div class="mt-3 p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-slate-300">
+            <div class="text-slate-400 text-[11px] mb-1">Combined Layer-0 Input:</div>
+            <div class="flex items-center justify-between">
+              <span class="text-cyan-400">$\mathbf{e}_{	ext{word}}$ [Semantic]</span>
+              <span class="text-slate-500">+</span>
+              <span class="text-amber-400">$\mathbf{p}_{	ext{pos}}$ [Spatial]</span>
+              <span class="text-slate-500">=</span>
+              <span class="text-white font-bold">$\mathbf{x}_0$ [Context Ready]</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CS Deep Dive (Math & Code) -->
+      <div class="cs-peek mt-6 rounded-xl bg-slate-950 border border-amber-900/40 p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+          <span class="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            CS Deep Dive: Sinusoidal Math &amp; Modern RoPE (Rotary Position Embeddings)
+          </span>
+          <span class="text-[11px] font-mono text-slate-500">Vaswani et al. 2017 &amp; Su et al. 2021</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div>
+            <h4 class="font-semibold text-slate-200 mb-1">Sinusoidal Formula &amp; Relative Shift:</h4>
+            <p class="text-slate-400 mb-2">
+              For token position $pos$ and dimension index $i \in \{0, 1, \dots, d/2 - 1\}$:
+            </p>
+            <div class="font-mono bg-slate-900 p-2.5 rounded border border-slate-800 text-slate-300">
+              $$PE_{(pos, 2i)} = \sin\left(rac{pos}{10000^{2i/d}}
+ight), \quad PE_{(pos, 2i+1)} = \cos\left(rac{pos}{10000^{2i/d}}
+ight)$$
+            </div>
+            <p class="text-slate-400 mt-2">
+              <strong>Key Theorem:</strong> For any fixed offset $k$, $PE_{pos+k}$ is a linear function of $PE_{pos}$. By trigonometric identity, there exists a rotation matrix $M_k$ such that $PE_{pos+k} = M_k PE_{pos}$. This allows the model to easily attend by relative distance!
+            </p>
+          </div>
+
+          <div>
+            <h4 class="font-semibold text-slate-200 mb-1">Modern RoPE (Used in LLaMA-3, Mistral):</h4>
+            <pre class="bg-slate-900 text-amber-300 p-2.5 rounded border border-slate-800 font-mono text-[11px] overflow-x-auto"><code>import torch
+
+def get_sinusoidal_pe(seq_len, d_model):
+    pe = torch.zeros(seq_len, d_model)
+    position = torch.arange(0, seq_len, dtype=torch.float).unsqueeze(1)
+    div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+    
+    pe[:, 0::2] = torch.sin(position * div_term)
+    pe[:, 1::2] = torch.cos(position * div_term)
+    return pe # Shape: [seq_len, d_model]
+
+# In modern models (RoPE), position is multiplied
+# directly as a 2D complex plane rotation on Q and K!</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- STAGE 5: SELF-ATTENTION & MULTI-HEAD ATTENTION -->
+    <!-- ================================================================= -->
+    <section id="section-attention" class="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 sm:p-8 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 font-mono text-sm font-bold flex items-center justify-center border border-purple-500/30">5</span>
+            <h2 class="text-2xl font-bold text-white tracking-tight">Stage 5: Scaled Dot-Product &amp; Multi-Head Attention</h2>
+          </div>
+          <p class="text-sm text-slate-400 mt-1">Contextualizing tokens via Query-Key matching: $	ext{softmax}\left(rac{Q K^T}{\sqrt{d_k}} + M
+ight) V$</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <label class="flex items-center gap-2 cursor-pointer text-xs font-mono bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
+            <input type="checkbox" id="causal-mask-toggle" checked class="rounded border-slate-700 text-purple-600 focus:ring-0">
+            <span class="text-slate-300">Causal Mask (GPT Autoregressive)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Intuition Box -->
+      <div class="rounded-xl bg-slate-800/50 border border-slate-700/60 p-4 mb-6 text-sm text-slate-300 leading-relaxed">
+        <p><strong class="text-purple-300 font-semibold">CS Intuition:</strong> Words change meaning depending on context. In <em>"The bank approved the mortgage"</em> vs <em>"The river bank had mud"</em>, the token <code class="text-purple-200 bg-purple-950/60 px-1 py-0.5 rounded font-mono">"bank"</code> needs different contextual vectors. Attention allows every token to broadcast a <strong>Query</strong> ("What information do I need?"), match against all other tokens' <strong>Keys</strong> ("What information do I have?"), and aggregate their <strong>Values</strong> ("Here is my semantic content!").</p>
+      </div>
+
+      <!-- Attention Heatmap Interactive Explorer -->
+      <div class="space-y-6 mb-8">
+        <!-- Sentence Presets & Head Selectors -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
+          <div class="flex flex-wrap items-center gap-1.5 text-xs">
+            <span class="text-slate-400 font-mono text-[11px]">Linguistic Scenarios:</span>
+            <button class="attn-preset px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-purple-300 border border-slate-700 font-mono active" data-text="The animal didn't cross the street because it was too tired">Coreference: "it" → animal</button>
+            <button class="attn-preset px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-purple-300 border border-slate-700 font-mono" data-text="The animal didn't cross the street because it was too wide">Coreference: "it" → street</button>
+            <button class="attn-preset px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-purple-300 border border-slate-700 font-mono" data-text="The bank approved the loan for the startup">Polysemy: "bank" → loan</button>
+          </div>
+
+          <!-- Multi-Head Tabs -->
+          <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800 text-xs font-mono">
+            <button class="head-btn px-2.5 py-1 rounded bg-purple-600 text-white font-medium" data-head="1">Head 1: Syntax</button>
+            <button class="head-btn px-2.5 py-1 rounded hover:bg-slate-800 text-slate-400" data-head="2">Head 2: Coreference</button>
+            <button class="head-btn px-2.5 py-1 rounded hover:bg-slate-800 text-slate-400" data-head="3">Head 3: Context</button>
+          </div>
+        </div>
+
+        <!-- Custom Input -->
+        <div class="flex gap-2">
+          <input type="text" id="attn-sentence-input" value="The animal didn't cross the street because it was too tired" class="flex-1 bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500/50">
+          <button id="update-attn-btn" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-medium text-xs font-mono transition shadow-md shadow-purple-600/30">
+            Recompute Attention
+          </button>
+        </div>
+
+        <!-- Heatmap Display & Token Focus -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Attention Matrix Grid (8 cols) -->
+          <div class="lg:col-span-8 rounded-2xl bg-slate-950 border border-slate-800 p-4 overflow-x-auto">
+            <div class="flex items-center justify-between mb-3 text-xs">
+              <span class="font-mono text-slate-400">Attention Weights Matrix $A_{i,j} = 	ext{softmax}\left(rac{q_i k_j^T}{\sqrt{d_k}} + M_{i,j}
+ight)$</span>
+              <span class="text-[11px] text-purple-400 font-mono">Rows = Queries ($Q_i$), Cols = Keys ($K_j$)</span>
+            </div>
+            
+            <div id="attention-matrix-grid" class="flex justify-center p-2 min-w-max">
+              <!-- Rendered via JS -->
+            </div>
+
+            <div class="flex items-center justify-between mt-3 text-[11px] font-mono text-slate-400 pt-2 border-t border-slate-900">
+              <div class="flex items-center gap-2">
+                <span>Scale:</span>
+                <span class="inline-block w-3 h-3 rounded bg-purple-950 border border-purple-900"></span> <span>0.00 (No Attn / Masked)</span>
+                <span class="inline-block w-3 h-3 rounded bg-purple-500"></span> <span>1.00 (Max Attn)</span>
+              </div>
+              <span>Hover over any cell or token to isolate attention connections</span>
+            </div>
+          </div>
+
+          <!-- Token Focus & Attention Distribution (4 cols) -->
+          <div class="lg:col-span-4 rounded-2xl bg-slate-950 border border-slate-800 p-4 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-mono text-slate-400">Query Token Focus</span>
+                <span id="focus-token-badge" class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono text-xs font-bold border border-purple-500/30">"it" (Pos 8)</span>
+              </div>
+              <p class="text-xs text-slate-400 mb-3">
+                Where does the query token allocate its attention budget across previous tokens? Notice the dominant probability mass:
+              </p>
+              
+              <div id="attn-bars-container" class="space-y-2 text-xs font-mono max-h-[280px] overflow-y-auto pr-1">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+
+            <!-- QKV Pipeline Card -->
+            <div class="mt-4 p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-mono space-y-1 text-slate-300">
+              <div class="text-slate-400 uppercase text-[10px] tracking-wider">Matrix Dimensions Flow:</div>
+              <div class="flex justify-between">
+                <span>Input tokens:</span>
+                <span class="text-purple-300">$X \in \mathbb{R}^{T 	imes d_{	ext{model}}}$</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Q, K, V Projections:</span>
+                <span class="text-purple-300">$Q, K, V \in \mathbb{R}^{T 	imes d_k}$</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Attention Scores:</span>
+                <span class="text-purple-300">$A \in \mathbb{R}^{T 	imes T}$</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Contextual Output:</span>
+                <span class="text-purple-300">$O = A V \in \mathbb{R}^{T 	imes d_k}$</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CS Deep Dive (Math & Code) -->
+      <div class="cs-peek mt-6 rounded-xl bg-slate-950 border border-purple-900/40 p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+          <span class="text-xs font-mono font-bold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            CS Deep Dive: Why Divide by $\sqrt{d_k}$? (Softmax Gradient Saturation)
+          </span>
+          <span class="text-[11px] font-mono text-slate-500">Vaswani et al. 2017</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div>
+            <h4 class="font-semibold text-slate-200 mb-1">Mathematical Variance Proof:</h4>
+            <p class="text-slate-400 mb-2">
+              Assume components of $\mathbf{q}$ and $\mathbf{k}$ are independent random variables with mean $0$ and variance $1$. Their dot product is:
+            </p>
+            <div class="font-mono bg-slate-900 p-2 rounded border border-slate-800 text-slate-300 text-[11px]">
+              $$\mathbf{q} \cdot \mathbf{k} = \sum_{i=1}^{d_k} q_i k_i \implies \mathbb{E}[\mathbf{q} \cdot \mathbf{k}] = 0, \quad 	ext{Var}(\mathbf{q} \cdot \mathbf{k}) = d_k$$
+            </div>
+            <p class="text-slate-400 mt-2">
+              For large $d_k = 64$ or $128$, standard deviation is $\sqrt{d_k} pprox 8$ or $11$. The logits become large, pushing $	ext{softmax}$ into regions with near-zero gradients ($rac{\partial 	ext{softmax}}{\partial z} 	o 0$). Scaling by $rac{1}{\sqrt{d_k}}$ restores unit variance, preventing gradient collapse!
+            </p>
+          </div>
+
+          <div>
+            <h4 class="font-semibold text-slate-200 mb-1">PyTorch Scaled Dot-Product Attention (SDPA):</h4>
+            <pre class="bg-slate-900 text-purple-300 p-2.5 rounded border border-slate-800 font-mono text-[11px] overflow-x-auto"><code>import torch
+import torch.nn.functional as F
+
+# Q, K, V shapes: [batch_size, num_heads, seq_len, head_dim]
+B, H, T, D = 1, 8, 12, 64
+Q = torch.randn(B, H, T, D)
+K = torch.randn(B, H, T, D)
+V = torch.randn(B, H, T, D)
+
+# Hardware-accelerated FlashAttention implementation:
+context = F.scaled_dot_product_attention(
+    Q, K, V, 
+    is_causal=True, # Triangular causal mask
+    dropout_p=0.0
+)
+print("Output shape:", context.shape) # [1, 8, 12, 64]</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- STAGE 6: RESIDUAL CONNECTIONS, LAYERNORM & FFN BLOCKS -->
+    <!-- ================================================================= -->
+    <section id="section-residual" class="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 sm:p-8 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 font-mono text-sm font-bold flex items-center justify-center border border-rose-500/30">6</span>
+            <h2 class="text-2xl font-bold text-white tracking-tight">Stage 6: The Residual Stream, LayerNorm &amp; FFN Knowledge</h2>
+          </div>
+          <p class="text-sm text-slate-400 mt-1">Information highway and associative memory: $\mathbf{x}_{l+1} = \mathbf{x}_l + 	ext{Attn}(	ext{LN}(\mathbf{x}_l)) + 	ext{FFN}(	ext{LN}(\mathbf{x}_l'))$</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs px-2.5 py-1 rounded bg-rose-500/10 text-rose-300 border border-rose-500/30 font-mono">
+            RMSNorm &amp; SwiGLU
+          </span>
+        </div>
+      </div>
+
+      <!-- Intuition Box -->
+      <div class="rounded-xl bg-slate-800/50 border border-slate-700/60 p-4 mb-6 text-sm text-slate-300 leading-relaxed">
+        <p><strong class="text-rose-300 font-semibold">CS Intuition:</strong> Think of the Transformer as an assembly line. The <strong>Residual Stream</strong> $\mathbf{x}$ is a central conveyor belt running uninterrupted through all 32+ layers. In each layer, Multi-Head Attention reads from the belt and adds contextual clues; then the <strong>Feed-Forward Network (FFN)</strong> reads from the belt and injects factual world knowledge. LayerNorm / RMSNorm ensures the signals don't explode or vanish!</p>
+      </div>
+
+      <!-- Interactive LayerNorm & Residual Sandbox -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+        <!-- LayerNorm Vector Stabilizer (6 cols) -->
+        <div class="lg:col-span-6 rounded-2xl bg-slate-950 border border-slate-800 p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span class="text-xs font-mono font-bold text-rose-400 uppercase tracking-wider">
+              Interactive LayerNorm / RMSNorm Stabilizer
+            </span>
+            <span class="text-[11px] font-mono text-slate-400">$\mu = 0, \sigma^2 = 1$</span>
+          </div>
+          <p class="text-xs text-slate-400">
+            Adjust the raw activation values of an unnormalized token vector. Watch how Layer Normalization centers the mean to zero and rescales variance to 1.0:
+          </p>
+
+          <!-- Raw Input Sliders -->
+          <div class="space-y-2 text-xs font-mono">
+            <div class="flex items-center gap-3">
+              <span class="w-12 text-slate-400">$x_1$:</span>
+              <input type="range" id="ln-x1" min="-20" max="20" value="8" class="flex-1 h-1.5 bg-slate-800 rounded appearance-none accent-rose-500">
+              <span id="ln-v1" class="w-10 text-right text-rose-300">+8.0</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="w-12 text-slate-400">$x_2$:</span>
+              <input type="range" id="ln-x2" min="-20" max="20" value="-12" class="flex-1 h-1.5 bg-slate-800 rounded appearance-none accent-rose-500">
+              <span id="ln-v2" class="w-10 text-right text-rose-300">-12.0</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="w-12 text-slate-400">$x_3$:</span>
+              <input type="range" id="ln-x3" min="-20" max="20" value="15" class="flex-1 h-1.5 bg-slate-800 rounded appearance-none accent-rose-500">
+              <span id="ln-v3" class="w-10 text-right text-rose-300">+15.0</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="w-12 text-slate-400">$x_4$:</span>
+              <input type="range" id="ln-x4" min="-20" max="20" value="-3" class="flex-1 h-1.5 bg-slate-800 rounded appearance-none accent-rose-500">
+              <span id="ln-v4" class="w-10 text-right text-rose-300">-3.0</span>
+            </div>
+          </div>
+
+          <!-- Normalized Output Result -->
+          <div id="ln-output-card" class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono space-y-1.5 text-slate-300">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Transformer Layer Block Architecture Diagram (6 cols) -->
+        <div class="lg:col-span-6 rounded-2xl bg-slate-950 border border-slate-800 p-5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+              <span class="text-xs font-mono font-bold text-rose-400 uppercase tracking-wider">
+                Transformer Block Flow (Pre-LN Architecture)
+              </span>
+              <span class="text-[11px] font-mono text-slate-500">Layer $l 	o l+1$</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">
+              Modern models (LLaMA, GPT-4, Gemma) use <strong>Pre-LayerNorm</strong>: inputs are normalized <em>before</em> entering sublayers, keeping the residual stream clean:
+            </p>
+          </div>
+
+          <!-- Interactive Layer Block Visual -->
+          <div class="space-y-2 font-mono text-xs">
+            <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between text-slate-300">
+              <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-slate-400"></span> Input Residual Highway:</span>
+              <span class="text-slate-100 font-bold">$\mathbf{x}_l$</span>
+            </div>
+
+            <div class="pl-6 border-l-2 border-rose-500/40 space-y-2 my-1">
+              <div class="p-2 rounded bg-purple-950/40 border border-purple-800/40 text-purple-200 flex justify-between">
+                <span>1. Multi-Head Attention:</span>
+                <span>$\Delta_A = 	ext{MHA}(	ext{RMSNorm}(\mathbf{x}_l))$</span>
+              </div>
+              <div class="p-1.5 rounded bg-slate-900 text-slate-400 text-[11px] flex justify-between">
+                <span>Residual Add 1:</span>
+                <span class="text-rose-400">$\mathbf{x}_l' = \mathbf{x}_l + \Delta_A$</span>
+              </div>
+              <div class="p-2 rounded bg-rose-950/40 border border-rose-800/40 text-rose-200 flex justify-between">
+                <span>2. Feed-Forward Network:</span>
+                <span>$\Delta_F = 	ext{FFN}(	ext{RMSNorm}(\mathbf{x}_l'))$</span>
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between text-emerald-300 font-bold">
+              <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Output Residual Stream:</span>
+              <span>$\mathbf{x}_{l+1} = \mathbf{x}_l' + \Delta_F$</span>
+            </div>
+          </div>
+
+          <div class="mt-4 p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400">
+            <strong class="text-rose-300">Why FFNs Store Facts:</strong> Research shows FFN layers act as associative memory tables: the first linear layer activates specific concept neurons, and the second layer outputs factual attributes (e.g. "Eiffel Tower" $	o$ "Paris").
+          </div>
+        </div>
+      </div>
+
+      <!-- CS Deep Dive (Math & Code) -->
+      <div class="cs-peek mt-6 rounded-xl bg-slate-950 border border-rose-900/40 p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+          <span class="text-xs font-mono font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            CS Deep Dive: Gradient Flow Theorem &amp; Modern SwiGLU FFN
+          </span>
+          <span class="text-[11px] font-mono text-slate-500">He et al. 2016 &amp; Shazeer 2020</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div>
+            <h4 class="font-semibold text-slate-200 mb-1">Residual Gradient Highway Theorem:</h4>
+            <p class="text-slate-400 mb-2">
+              For any two layers $l$ and $L$ with $L > l$, recursive expansion yields $\mathbf{x}_L = \mathbf{x}_l + \sum_{i=l}^{L-1} \mathcal{F}_i(\mathbf{x}_i)$. By chain rule, the gradient of the loss $\mathcal{E}$ with respect to $\mathbf{x}_l$ is:
+            </p>
+            <div class="font-mono bg-slate-900 p-2 rounded border border-slate-800 text-slate-300 text-[11px]">
+              $$rac{\partial \mathcal{E}}{\partial \mathbf{x}_l} = rac{\partial \mathcal{E}}{\partial \mathbf{x}_L} \left( \mathbf{I} + rac{\partial}{\partial \mathbf{x}_l} \sum_{i=l}^{L-1} \mathcal{F}_i(\mathbf{x}_i) 
+ight)$$
+            </div>
+            <p class="text-slate-400 mt-2">
+              The term $\mathbf{I}$ (the Identity matrix) guarantees that gradient signal can propagate directly backward from layer $L$ to layer $l$ without vanishing, even across hundreds of layers!
+            </p>
+          </div>
+
+          <div>
+            <h4 class="font-semibold text-slate-200 mb-1">Modern SwiGLU MLP (LLaMA-3 / Mistral):</h4>
+            <pre class="bg-slate-900 text-rose-300 p-2.5 rounded border border-slate-800 font-mono text-[11px] overflow-x-auto"><code>import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class SwiGLUMLP(nn.Module):
+    def __init__(self, d_model, d_ffn):
+        super().__init__()
+        self.w_gate = nn.Linear(d_model, d_ffn, bias=False)
+        self.w_up   = nn.Linear(d_model, d_ffn, bias=False)
+        self.w_down = nn.Linear(d_ffn, d_model, bias=False)
+
+    def forward(self, x):
+        # Swish(x * W_gate) element-wise multiplied by (x * W_up)
+        return self.w_down(F.silu(self.w_gate(x)) * self.w_up(x))</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- STAGES 7 & 8: OUTPUT LOGITS, SOFTMAX & SAMPLING DYNAMICS -->
+    <!-- ================================================================= -->
+    <section id="section-softmax" class="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 sm:p-8 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 font-mono text-sm font-bold flex items-center justify-center border border-blue-500/30">7</span>
+            <h2 class="text-2xl font-bold text-white tracking-tight">Stage 7: Output Logits &amp; The Softmax Probability Distribution</h2>
+          </div>
+          <p class="text-sm text-slate-400 mt-1">Projecting back to vocabulary space and computing probabilities: $P(w_i) = rac{\exp(z_i / T)}{\sum_j \exp(z_j / T)}$</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs px-2.5 py-1 rounded bg-blue-500/10 text-blue-300 border border-blue-500/30 font-mono">
+            Un-embedding: $\mathbb{R}^{d} 	o \mathbb{R}^{|V|}$
+          </span>
+        </div>
+      </div>
+
+      <!-- Intuition Box -->
+      <div class="rounded-xl bg-slate-800/50 border border-slate-700/60 p-4 mb-6 text-sm text-slate-300 leading-relaxed">
+        <p><strong class="text-blue-300 font-semibold">CS Intuition:</strong> The final hidden vector $\mathbf{x}_{	ext{final}} \in \mathbb{R}^{d_{	ext{model}}}$ contains the synthesized context of the entire prompt. To convert this vector into words, we multiply it by the <strong>Un-embedding Matrix</strong> $W_U \in \mathbb{R}^{d_{	ext{model}} 	imes |V|}$ (often tied to the input embedding matrix). This produces raw unnormalized scores called <strong>Logits</strong> ($z \in \mathbb{R}^{|V|}$), which Softmax squashes into a valid probability distribution summing to exactly $1.000$.</p>
+      </div>
+
+      <!-- Sampling & Decoding Sandbox (Stage 8 integrated) -->
+      <div id="section-sampling" class="pt-2">
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-3 mb-6">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-teal-500/20 text-teal-400 font-mono text-sm font-bold flex items-center justify-center border border-teal-500/30">8</span>
+            <h3 class="text-xl font-bold text-white tracking-tight">Stage 8: Decoding &amp; Sampling Dynamics (Temperature, Top-K, Top-P)</h3>
+          </div>
+          <span class="text-xs text-teal-300 font-mono bg-teal-500/10 px-2.5 py-1 rounded border border-teal-500/30">Stochastic Next-Token Generation</span>
+        </div>
+
+        <!-- Prompt Input & Controls -->
+        <div class="space-y-6 mb-8">
+          <!-- Context Prompt -->
+          <div>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <label for="prompt-context-input" class="text-sm font-semibold text-slate-200">
+                Inference Prompt (Context preceding next token prediction):
+              </label>
+              <div class="flex flex-wrap items-center gap-1.5 text-xs">
+                <span class="text-slate-400 font-mono text-[11px]">Presets:</span>
+                <button class="prompt-preset px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700 font-mono active" data-prompt="The capital of France is">France Capital</button>
+                <button class="prompt-preset px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700 font-mono" data-prompt="Artificial intelligence will revolutionize">AI Future</button>
+                <button class="prompt-preset px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700 font-mono" data-prompt="The programmer fixed the critical bug in the">Bug in code</button>
+                <button class="prompt-preset px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700 font-mono" data-prompt="In a deep learning transformer, attention">Transformer attention</button>
+              </div>
+            </div>
+
+            <div class="flex gap-2">
+              <input type="text" id="prompt-context-input" value="The capital of France is" class="flex-1 bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-teal-500/50">
+              <button id="reset-prompt-btn" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono border border-slate-700 transition">
+                Reset
+              </button>
+            </div>
+          </div>
+
+          <!-- Parameter Sliders -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 rounded-xl bg-slate-950/80 border border-slate-800 p-4">
+            <!-- Temperature -->
+            <div>
+              <div class="flex items-center justify-between text-xs font-mono mb-1.5">
+                <span class="text-slate-300 flex items-center gap-1">
+                  <strong>Temperature ($T$):</strong>
+                </span>
+                <span id="temp-val" class="text-teal-400 font-bold bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/30">0.70</span>
+              </div>
+              <input type="range" id="temp-slider" min="0.05" max="2.0" step="0.05" value="0.70" class="w-full h-1.5 bg-slate-800 rounded appearance-none accent-teal-500 cursor-pointer">
+              <div class="flex justify-between text-[10px] text-slate-500 font-mono mt-1">
+                <span>0.1 (Greedy Argmax)</span>
+                <span>1.0 (Calibrated)</span>
+                <span>2.0 (Chaotic)</span>
+              </div>
+            </div>
+
+            <!-- Top-K -->
+            <div>
+              <div class="flex items-center justify-between text-xs font-mono mb-1.5">
+                <span class="text-slate-300"><strong>Top-K ($k$):</strong></span>
+                <span id="topk-val" class="text-teal-400 font-bold bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/30">10</span>
+              </div>
+              <input type="range" id="topk-slider" min="1" max="20" step="1" value="10" class="w-full h-1.5 bg-slate-800 rounded appearance-none accent-teal-500 cursor-pointer">
+              <div class="flex justify-between text-[10px] text-slate-500 font-mono mt-1">
+                <span>k = 1 (Greedy)</span>
+                <span>k = 10</span>
+                <span>k = 20 (Wide)</span>
+              </div>
+            </div>
+
+            <!-- Top-P -->
+            <div>
+              <div class="flex items-center justify-between text-xs font-mono mb-1.5">
+                <span class="text-slate-300"><strong>Top-P Nucleus ($p$):</strong></span>
+                <span id="topp-val" class="text-teal-400 font-bold bg-teal-500/10 px-2 py-0.5 rounded border border-teal-500/30">0.90</span>
+              </div>
+              <input type="range" id="topp-slider" min="0.1" max="1.0" step="0.05" value="0.90" class="w-full h-1.5 bg-slate-800 rounded appearance-none accent-teal-500 cursor-pointer">
+              <div class="flex justify-between text-[10px] text-slate-500 font-mono mt-1">
+                <span>p = 0.5 (Conservative)</span>
+                <span>p = 0.9 (Standard)</span>
+                <span>p = 1.0 (Off)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Generation Control Buttons -->
+          <div class="flex flex-wrap items-center gap-3">
+            <button id="sample-one-btn" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold text-sm transition shadow-lg shadow-teal-600/30 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+              <span>🎲 Roll &amp; Sample 1 Token</span>
+            </button>
+
+            <button id="auto-generate-btn" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <span>Auto-Generate 5 Tokens</span>
+            </button>
+
+            <span id="sampling-toast" class="text-xs font-mono text-emerald-400"></span>
+          </div>
+
+          <!-- Probability Distribution Table & Bar Chart -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Candidate Table (7 cols) -->
+            <div class="lg:col-span-7 rounded-2xl bg-slate-950 border border-slate-800 p-4 overflow-x-auto">
+              <div class="flex items-center justify-between mb-3 text-xs">
+                <span class="font-mono text-slate-400">Top Candidate Tokens (After Filtering &amp; Temperature)</span>
+                <span class="text-[11px] text-teal-400 font-mono">Softmax Probabilities: $\sum P_i = 100\%$</span>
+              </div>
+
+              <div id="candidate-table-container">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+
+            <!-- Probability Histogram / Bar Visualizer (5 cols) -->
+            <div class="lg:col-span-5 rounded-2xl bg-slate-950 border border-slate-800 p-4 flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-mono text-slate-400">Probability Mass Distribution</span>
+                  <span id="entropy-badge" class="text-[11px] font-mono text-cyan-300">Entropy: Medium</span>
+                </div>
+                <div id="prob-bars-container" class="space-y-2.5 text-xs font-mono">
+                  <!-- Rendered dynamically -->
+                </div>
+              </div>
+
+              <div class="mt-4 p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] font-mono text-slate-400 space-y-1">
+                <div><strong class="text-teal-300">Top-K:</strong> Hard cutoff at rank $k$.</div>
+                <div><strong class="text-teal-300">Top-P:</strong> Dynamic cutoff at cumulative threshold $p$.</div>
+                <div><strong class="text-teal-300">Temperature:</strong> Divides logits before $\exp(z/T)$.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CS Deep Dive (Math & Code) -->
+      <div class="cs-peek mt-6 rounded-xl bg-slate-950 border border-blue-900/40 p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+          <span class="text-xs font-mono font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            CS Deep Dive: Softmax Numerical Stability &amp; Nucleus Sampling Algorithm
+          </span>
+          <span class="text-[11px] font-mono text-slate-500">Holtzman et al. 2019</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div>
+            <h4 class="font-semibold text-slate-200 mb-1">Numerical Stability of Softmax:</h4>
+            <p class="text-slate-400 mb-2">
+              Naïve $\exp(z_i)$ can easily overflow 32-bit floating point if $z_i > 88.7$. We exploit the shift-invariance property of softmax:
+            </p>
+            <div class="font-mono bg-slate-900 p-2 rounded border border-slate-800 text-slate-300 text-[11px]">
+              $$	ext{softmax}(z)_i = rac{e^{z_i - m}}{\sum_{j=1}^{|V|} e^{z_j - m}}, \quad 	ext{where } m = \max_{j} z_j$$
+            </div>
+            <p class="text-slate-400 mt-2">
+              Subtracting the maximum logit $m$ ensures the maximum exponent is $e^0 = 1$, completely preventing floating point overflow ($	ext{NaN}$ / $	ext{Inf}$) without altering probabilities!
+            </p>
+          </div>
+
+          <div>
+            <h4 class="font-semibold text-slate-200 mb-1">Production Top-K &amp; Top-P Sampling in PyTorch:</h4>
+            <pre class="bg-slate-900 text-blue-300 p-2.5 rounded border border-slate-800 font-mono text-[11px] overflow-x-auto"><code>import torch
+import torch.nn.functional as F
+
+def sample(logits, temperature=0.7, top_k=10, top_p=0.9):
+    # 1. Apply temperature
+    logits = logits / temperature
+    
+    # 2. Top-K filtering
+    if top_k > 0:
+        val, _ = torch.topk(logits, min(top_k, logits.size(-1)))
+        logits[logits < val[:, [-1]]] = -float('Inf')
+        
+    # 3. Top-P (Nucleus) filtering
+    sorted_logits, sorted_indices = torch.sort(logits, descending=True)
+    cumulative_probs = torch.cumsum(F.softmax(sorted_logits, dim=-1), dim=-1)
+    
+    # Remove tokens with cumulative probability above threshold
+    sorted_indices_to_remove = cumulative_probs > top_p
+    # Shift indices right to keep the first token above threshold
+    sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
+    sorted_indices_to_remove[..., 0] = 0
+    
+    indices_to_remove = sorted_indices[sorted_indices_to_remove]
+    logits[..., indices_to_remove] = -float('Inf')
+    
+    # 4. Softmax and Categorical roll
+    probs = F.softmax(logits, dim=-1)
+    return torch.multinomial(probs, num_samples=1)</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- STAGE 9: END-TO-END CHRONOLOGICAL PIPELINE SANDBOX -->
+    <!-- ================================================================= -->
+    <section id="section-pipeline" class="rounded-2xl border border-indigo-500/30 bg-gradient-to-b from-slate-900 to-[#090d16] p-6 sm:p-8 shadow-2xl">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4 mb-6">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-500 to-cyan-400 text-white font-mono text-sm font-bold flex items-center justify-center shadow-lg shadow-indigo-500/30">9</span>
+            <h2 class="text-2xl font-bold text-white tracking-tight">Stage 9: Complete End-to-End Chronological Pipeline Sandbox</h2>
+          </div>
+          <p class="text-sm text-slate-400 mt-1">Trace any custom sentence through all 7 tensor transformations simultaneously</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono">
+            Interactive Stepper: Step 1 of 7
+          </span>
+        </div>
+      </div>
+
+      <!-- Pipeline Input Bar -->
+      <div class="space-y-4 mb-8">
+        <label for="e2e-input" class="text-sm font-semibold text-slate-200">
+          Enter Any Prompt to Trace Through the Full Transformer Pipeline:
+        </label>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input type="text" id="e2e-input" value="The astronomer looked through the large" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+          <button id="e2e-start-btn" class="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-cyan-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-bold text-sm transition shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>Run Pipeline</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Interactive Stepper Timeline Indicator -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-8 text-xs font-mono">
+        <button class="e2e-step-tab p-2.5 rounded-xl border border-indigo-500 bg-indigo-500/10 text-indigo-300 text-left transition" data-step="1">
+          <div class="text-[10px] text-indigo-400 uppercase">Step 1</div>
+          <div class="font-bold">Raw Text</div>
+        </button>
+        <button class="e2e-step-tab p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 text-left hover:bg-slate-800 transition" data-step="2">
+          <div class="text-[10px] text-slate-500 uppercase">Step 2</div>
+          <div class="font-bold">Tokens &amp; IDs</div>
+        </button>
+        <button class="e2e-step-tab p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 text-left hover:bg-slate-800 transition" data-step="3">
+          <div class="text-[10px] text-slate-500 uppercase">Step 3</div>
+          <div class="font-bold">Embedding + PE</div>
+        </button>
+        <button class="e2e-step-tab p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 text-left hover:bg-slate-800 transition" data-step="4">
+          <div class="text-[10px] text-slate-500 uppercase">Step 4</div>
+          <div class="font-bold">Self-Attention</div>
+        </button>
+        <button class="e2e-step-tab p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 text-left hover:bg-slate-800 transition" data-step="5">
+          <div class="text-[10px] text-slate-500 uppercase">Step 5</div>
+          <div class="font-bold">Residual &amp; FFN</div>
+        </button>
+        <button class="e2e-step-tab p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 text-left hover:bg-slate-800 transition" data-step="6">
+          <div class="text-[10px] text-slate-500 uppercase">Step 6</div>
+          <div class="font-bold">Logits &amp; Softmax</div>
+        </button>
+        <button class="e2e-step-tab p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 text-left hover:bg-slate-800 transition" data-step="7">
+          <div class="text-[10px] text-slate-500 uppercase">Step 7</div>
+          <div class="font-bold">Sampled Output</div>
+        </button>
+      </div>
+
+      <!-- Active Stage Viewport Card -->
+      <div class="rounded-2xl bg-slate-950 border border-slate-800 p-6 shadow-xl mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3 mb-4">
+          <div class="flex items-center gap-2">
+            <span id="e2e-step-badge" class="px-2.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-mono text-xs font-bold border border-indigo-500/30">Step 1 of 7</span>
+            <h3 id="e2e-step-title" class="text-lg font-bold text-white tracking-tight">Step 1: Raw Character Stream Input</h3>
+          </div>
+          <div id="e2e-tensor-shape" class="text-xs font-mono px-2.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800">
+            Tensor Shape: Character string (Length: 42)
+          </div>
+        </div>
+
+        <!-- Step Dynamic Content Container -->
+        <div id="e2e-viewport-content" class="min-h-[200px] flex flex-col justify-center">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Math & Mechanics Explanation for Active Step -->
+        <div id="e2e-step-explanation" class="mt-4 p-4 rounded-xl bg-slate-900/70 border border-slate-800/80 text-xs text-slate-300 leading-relaxed font-mono">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Stepper Controls Navigation -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <button id="e2e-prev-btn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono border border-slate-700 transition flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            <span>Previous Step</span>
+          </button>
+          <button id="e2e-next-btn" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-mono font-bold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30">
+            <span>Next Step</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="e2e-autoplay-btn" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-mono border border-slate-700 transition flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
+            <span>Auto-Play Sequence</span>
+          </button>
+          <button id="e2e-append-btn" class="px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-mono border border-emerald-500/30 transition">
+            + Append Sampled Token &amp; Continue
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================================================================= -->
+  <!-- CS CHEAT SHEET & GLOSSARY MODAL -->
+  <!-- ================================================================= -->
+  <div id="glossary-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl max-h-[85vh] bg-slate-900 border border-slate-800 rounded-2xl flex flex-col shadow-2xl overflow-hidden">
+      <!-- Modal Header -->
+      <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+        <div class="flex items-center gap-3">
+          <span class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 font-mono text-sm font-bold flex items-center justify-center border border-indigo-500/30">📖</span>
+          <div>
+            <h3 class="text-lg font-bold text-white tracking-tight">CS Student LLM Cheat Sheet &amp; Glossary</h3>
+            <p class="text-xs text-slate-400">Core mathematical definitions, computational complexities, and key architectural theorems</p>
+          </div>
+        </div>
+        <button onclick="document.getElementById('glossary-modal').classList.add('hidden')" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">✕</button>
+      </div>
+
+      <!-- Search Box -->
+      <div class="p-4 border-b border-slate-800 bg-slate-900/50">
+        <input type="text" id="glossary-search" placeholder="Search concepts (e.g. BPE, Cosine, RoPE, Temperature, Softmax)..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 font-mono">
+      </div>
+
+      <!-- Glossary List Container -->
+      <div id="glossary-container" class="p-6 overflow-y-auto space-y-4 text-xs font-mono">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="mt-20 border-t border-slate-800 bg-slate-950/90 py-10 text-xs text-slate-500 text-center font-mono space-y-2">
+    <p class="text-slate-400">LLM Pipeline Explorer — Visual &amp; Mathematical Interactive Guide for CS Students</p>
+    <p>Crafted with pure HTML5, Tailwind CSS, Plotly.js, KaTeX, and Native Linear Algebra in JavaScript.</p>
+  </footer>
+
+<script>
+// =====================================================================
+// GLOBAL STATE & UTILITIES
+// =====================================================================
+let showMathCode = true;
+let userText = null;
+
+// Escape HTML utility
+function escapeHtml(s) {
+  if (typeof s !== 'string') s = String(s);
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// Deterministic HSL color generator for token IDs
+function colorForId(id) {
+  const hue = (id * 47) % 360;
+  return `hsl(${hue}, 70%, 75%)`;
+}
+
+// Dot product
+function dot(a, b) {
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) sum += a[i] * b[i];
+  return sum;
+}
+
+// L2 Norm
+function norm(v) {
+  return Math.sqrt(v.reduce((sum, x) => sum + x * x, 0)) || 1;
+}
+
+// L2 Normalize
+function normalize(v) {
+  const len = norm(v);
+  return v.map(x => x / len);
+}
+
+// Cosine similarity
+function similarity(a, b) {
+  return dot(a, b) / (norm(a) * norm(b) || 1);
+}
+
+// String hash (32-bit positive integer)
+function hashString(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  }
+  return h;
+}
+
+// KaTeX auto-render helper
+function triggerMathRender() {
+  if (window.renderMathInElement) {
+    try {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", display: false }
+        ],
+        throwOnError: false
+      });
+    } catch (e) {
+      console.warn("KaTeX render error:", e);
+    }
+  }
+}
+
+// =====================================================================
+// PART 1: TOKENIZER & BPE ENGINE
+// =====================================================================
+let vocab = null;
+let sortedWords = [];
+let wordCounts = {};
+let subwordPieces = [];
+const COMMON_ENDINGS = ["##s", "##es", "##ed", "##ing", "##er", "##ly", "##y"];
+
+function splitIntoWords(text) {
+  let t = text.toLowerCase();
+  t = t.replace(/([.,!?'])/g, " $1 ");
+  return t.split(/\s+/).filter(w => w !== "");
+}
+
+function buildVocabulary() {
+  const corpusText = document.getElementById("corpus").value;
+  const words = splitIntoWords(corpusText);
+
+  wordCounts = {};
+  for (const w of words) {
+    wordCounts[w] = (wordCounts[w] || 0) + 1;
+  }
+  sortedWords = Object.keys(wordCounts).sort((a, b) => wordCounts[b] - wordCounts[a]);
+
+  const letters = [...new Set(words.join("").replace(/[^a-z0-9]/g, ""))].sort();
+  subwordPieces = [...COMMON_ENDINGS, ...letters, ...letters.map(ch => "##" + ch)];
+
+  const slider = document.getElementById("vocab-slider");
+  slider.max = Math.max(1, sortedWords.length);
+  slider.value = sortedWords.length;
+  document.getElementById("vocab-slider-box").style.display = "block";
+
+  applyVocabSize(sortedWords.length);
+  generateBPEMergeHistory(corpusText);
+}
+
+function applyVocabSize(n) {
+  const kept = sortedWords.slice(0, n);
+  document.getElementById("vocab-slider-value").textContent = `${n} of ${sortedWords.length}`;
+
+  vocab = { "[UNK]": 0 };
+  let rows = `
+    <tr class="border-b border-slate-800 text-slate-400">
+      <td class="py-1 px-2 font-mono text-indigo-400">0</td>
+      <td class="py-1 px-2 font-mono">[UNK]</td>
+      <td class="py-1 px-2 font-mono">-</td>
+      <td class="py-1 px-2 text-[11px] text-slate-500">Special</td>
+    </tr>`;
+
+  kept.forEach(w => {
+    vocab[w] = Object.keys(vocab).length;
+    rows += `
+      <tr class="border-b border-slate-800/60 hover:bg-slate-800/40 text-slate-300">
+        <td class="py-1 px-2 font-mono text-indigo-400">${vocab[w]}</td>
+        <td class="py-1 px-2 font-mono">${escapeHtml(w)}</td>
+        <td class="py-1 px-2 font-mono text-slate-400">${wordCounts[w]}</td>
+        <td class="py-1 px-2 text-[11px] text-emerald-400/80">Word</td>
+      </tr>`;
+  });
+
+  subwordPieces.forEach(p => {
+    if (p in vocab) return;
+    vocab[p] = Object.keys(vocab).length;
+    rows += `
+      <tr class="border-b border-slate-800/40 hover:bg-slate-800/30 text-slate-400">
+        <td class="py-1 px-2 font-mono text-indigo-400">${vocab[p]}</td>
+        <td class="py-1 px-2 font-mono">${escapeHtml(p)}</td>
+        <td class="py-1 px-2 font-mono text-slate-500">-</td>
+        <td class="py-1 px-2 text-[11px] text-cyan-400/70">Subword</td>
+      </tr>`;
+  });
+
+  const totalTokens = Object.keys(vocab).length;
+  document.getElementById("vocab-output").innerHTML = `
+    <div class="flex items-center justify-between text-xs font-mono text-slate-400 mb-2">
+      <span>Total Vocabulary Size: <strong class="text-white">${totalTokens}</strong> tokens</span>
+      <span>${kept.length} full words + subwords + [UNK]</span>
+    </div>
+    <div class="h-64 overflow-y-auto rounded-xl border border-slate-800 bg-slate-950/90 text-xs">
+      <table class="w-full text-left border-collapse">
+        <thead class="sticky top-0 bg-slate-900 border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400 font-mono">
+          <tr>
+            <th class="py-1.5 px-2">ID</th>
+            <th class="py-1.5 px-2">Token</th>
+            <th class="py-1.5 px-2">Freq</th>
+            <th class="py-1.5 px-2">Type</th>
+          </tr>
+        </thead>
+        <tbody id="vocab-table-body">${rows}</tbody>
+      </table>
+    </div>`;
+
+  setupVocabFilter();
+}
+
+function setupVocabFilter() {
+  const searchInput = document.getElementById("vocab-search");
+  if (!searchInput) return;
+  searchInput.addEventListener("input", function() {
+    const q = this.value.toLowerCase().trim();
+    const rows = document.querySelectorAll("#vocab-table-body tr");
+    rows.forEach(r => {
+      const token = r.children[1] ? r.children[1].textContent.toLowerCase() : "";
+      r.style.display = token.includes(q) ? "" : "none";
+    });
+  });
+}
+
+function splitIntoSubwords(word) {
+  const pieces = [];
+  let start = 0;
+  while (start < word.length) {
+    let found = null;
+    for (let end = word.length; end > start; end--) {
+      let piece = word.slice(start, end);
+      if (start > 0) piece = "##" + piece;
+      if (piece in vocab) { found = piece; break; }
+    }
+    if (found === null) return [{ text: "[UNK]", id: 0, unknown: true }];
+    pieces.push({ text: found, id: vocab[found], unknown: true });
+    start += found.replace("##", "").length;
+  }
+  return pieces;
+}
+
+function encode(text) {
+  const tokens = [];
+  const mode = document.getElementById("token-algorithm-select").value;
+
+  if (mode === "char") {
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i].toLowerCase();
+      const id = (vocab && ch in vocab) ? vocab[ch] : (ch.charCodeAt(0) % 256);
+      tokens.push({ text: text[i], id: id, isSubword: false });
+    }
+    return tokens;
+  }
+
+  for (const word of splitIntoWords(text)) {
+    if (vocab && word in vocab) {
+      tokens.push({ text: word, id: vocab[word], isSubword: false });
+    } else {
+      tokens.push(...splitIntoSubwords(word));
+    }
+  }
+  return tokens;
+}
+
+function renderChips(tokens) {
+  let html = '<div class="flex flex-wrap gap-2">';
+  for (const t of tokens) {
+    const bg = colorForId(t.id);
+    html += `
+      <div class="chip rounded-lg px-2.5 py-1.5 border border-slate-700/80 shadow-sm flex flex-col items-center select-none" style="background-color: ${bg}; color: #0f172a;" title="Token: '${t.text}' | ID: ${t.id}">
+        <span class="text-xs font-mono font-bold">${escapeHtml(t.text)}</span>
+        <span class="text-[10px] font-mono opacity-80">id: ${t.id}</span>
+      </div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function tokenizeSentence() {
+  if (vocab === null) buildVocabulary();
+  const text = document.getElementById("encode-input").value;
+  const tokens = encode(text);
+  const chipsHtml = renderChips(tokens);
+
+  const charCount = text.length;
+  const byteCount = new TextEncoder().encode(text).length;
+  const ratio = tokens.length ? (charCount / tokens.length).toFixed(2) : "0.00";
+  const compression = charCount > 0 ? ((1 - tokens.length / charCount) * 100).toFixed(1) : "0.0";
+
+  document.getElementById("token-output").innerHTML = `
+    <div class="p-4 rounded-xl bg-slate-950/90 border border-slate-800 space-y-3">
+      <div class="flex items-center justify-between text-xs font-mono text-slate-400">
+        <span>Segmented Token Stream (${tokens.length} tokens):</span>
+        <span class="text-indigo-400">Hover chips to inspect token metadata</span>
+      </div>
+      ${chipsHtml}
+      
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-900 text-xs font-mono">
+        <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+          <span class="text-slate-500 block text-[10px]">RAW CHARACTERS</span>
+          <span class="text-slate-200 font-bold text-sm">${charCount}</span>
+        </div>
+        <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+          <span class="text-slate-500 block text-[10px]">TOKEN COUNT</span>
+          <span class="text-indigo-400 font-bold text-sm">${tokens.length}</span>
+        </div>
+        <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+          <span class="text-slate-500 block text-[10px]">CHARS PER TOKEN</span>
+          <span class="text-cyan-400 font-bold text-sm">${ratio}</span>
+        </div>
+        <div class="bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+          <span class="text-slate-500 block text-[10px]">COMPRESSION RATIO</span>
+          <span class="text-emerald-400 font-bold text-sm">${compression}%</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function generateBPEMergeHistory(corpusText) {
+  const treeContainer = document.getElementById("bpe-tree-content");
+  if (!treeContainer) return;
+
+  const words = corpusText.toLowerCase().replace(/[^a-z\s]/g, "").split(/\s+/).filter(Boolean);
+  const pairFreqs = {};
+
+  for (const w of words) {
+    for (let i = 0; i < w.length - 1; i++) {
+      const pair = w[i] + " + " + w[i+1];
+      pairFreqs[pair] = (pairFreqs[pair] || 0) + 1;
+    }
+  }
+
+  const sortedPairs = Object.entries(pairFreqs).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  let treeHtml = "";
+  sortedPairs.forEach(([pair, count], idx) => {
+    const merged = pair.replace(" + ", "");
+    treeHtml += `
+      <div class="flex items-center justify-between py-1 border-b border-slate-800/60">
+        <span class="text-slate-400">Iteration ${idx + 1}: Most frequent bigram <strong class="text-cyan-300">${pair}</strong> (seen ${count}x)</span>
+        <span class="text-emerald-400 font-bold">→ Merge into '${merged}'</span>
+      </div>`;
+  });
+
+  treeContainer.innerHTML = treeHtml || '<div class="text-slate-500">No multi-character words found.</div>';
+}
+
+// =====================================================================
+// PART 2: EMBEDDINGS & 3D PCA SPACE
+// =====================================================================
+// 64-dimensional semantic dictionary
+const SEMANTIC_BASE = {
+  // Dimension coordinates [royalty, animal, tech, geography, sentiment, science, action, size]
+  "king":     [0.9, -0.2, -0.3, 0.4, 0.3, -0.2, 0.2, 0.6],
+  "queen":    [0.9, -0.2, -0.3, 0.4, 0.5, -0.2, 0.2, 0.5],
+  "man":      [0.2, -0.1, 0.1, 0.1, 0.2, 0.0, 0.4, 0.5],
+  "woman":    [0.2, -0.1, 0.1, 0.1, 0.4, 0.0, 0.4, 0.4],
+  "prince":   [0.8, -0.2, -0.2, 0.3, 0.3, -0.1, 0.3, 0.4],
+  "princess": [0.8, -0.2, -0.2, 0.3, 0.5, -0.1, 0.3, 0.3],
+  "dog":      [-0.1, 0.9, -0.4, 0.1, 0.6, -0.2, 0.7, 0.3],
+  "puppy":    [-0.1, 0.9, -0.4, 0.1, 0.8, -0.2, 0.6, 0.1],
+  "cat":      [-0.1, 0.9, -0.4, 0.1, 0.4, -0.2, 0.5, 0.2],
+  "kitten":   [-0.1, 0.9, -0.4, 0.1, 0.7, -0.2, 0.5, 0.1],
+  "lion":     [0.5, 0.9, -0.4, 0.3, 0.2, -0.1, 0.8, 0.8],
+  "paris":    [0.4, -0.4, 0.1, 0.95, 0.6, 0.1, 0.1, 0.7],
+  "france":   [0.4, -0.4, 0.1, 0.98, 0.5, 0.1, 0.1, 0.9],
+  "berlin":   [0.3, -0.4, 0.4, 0.92, 0.4, 0.3, 0.1, 0.7],
+  "germany":  [0.3, -0.4, 0.5, 0.97, 0.4, 0.3, 0.1, 0.9],
+  "london":   [0.4, -0.4, 0.3, 0.94, 0.4, 0.2, 0.1, 0.8],
+  "england":  [0.4, -0.4, 0.2, 0.96, 0.4, 0.2, 0.1, 0.9],
+  "python":   [-0.3, 0.4, 0.9, 0.0, 0.5, 0.7, 0.6, 0.4],
+  "code":     [-0.4, -0.4, 0.95, 0.0, 0.3, 0.8, 0.7, 0.4],
+  "program":  [-0.4, -0.4, 0.92, 0.0, 0.3, 0.8, 0.7, 0.4],
+  "stock":    [-0.2, -0.3, 0.2, 0.3, -0.4, 0.3, 0.5, 0.7],
+  "market":   [-0.2, -0.3, 0.2, 0.4, -0.3, 0.2, 0.5, 0.8],
+  "crash":    [-0.3, -0.3, -0.1, 0.0, -0.9, 0.1, 0.9, 0.9],
+  "galaxy":   [-0.1, -0.5, 0.3, 0.0, 0.6, 0.98, 0.1, 1.0],
+  "telescope":[-0.1, -0.5, 0.6, 0.0, 0.4, 0.95, 0.3, 0.6]
+};
+
+function getSemanticVector(word) {
+  const w = word.toLowerCase().trim();
+  const v = new Array(64).fill(0);
+
+  // Fill first 8 dims with base features if known
+  if (SEMANTIC_BASE[w]) {
+    const base = SEMANTIC_BASE[w];
+    for (let i = 0; i < base.length; i++) v[i] = base[i] * 3.0;
+  }
+
+  // Trigram hashing for remaining dimensions
+  for (let i = 0; i + 3 <= w.length; i++) {
+    const tri = w.slice(i, i + 3);
+    v[8 + (hashString(tri) % 56)] += 1.0;
+  }
+
+  return normalize(v);
+}
+
+function spellingVector(sentence) {
+  const s = sentence.toLowerCase();
+  const v = new Array(64).fill(0);
+
+  // Blend semantic base word vectors if present
+  const words = splitIntoWords(s);
+  for (const w of words) {
+    if (SEMANTIC_BASE[w]) {
+      const base = SEMANTIC_BASE[w];
+      for (let j = 0; j < base.length; j++) v[j] += base[j] * 2.0;
+    }
+  }
+
+  // Blend trigram counts
+  for (let i = 0; i + 3 <= s.length; i++) {
+    const tri = s.slice(i, i + 3);
+    v[8 + (hashString(tri) % 56)] += 1.0;
+  }
+
+  return normalize(v);
+}
+
+// Compute semantic analogy: A - B + C
+function computeAnalogy() {
+  const a = document.getElementById("vec-a").value.trim().toLowerCase();
+  const b = document.getElementById("vec-b").value.trim().toLowerCase();
+  const c = document.getElementById("vec-c").value.trim().toLowerCase();
+
+  const va = getSemanticVector(a);
+  const vb = getSemanticVector(b);
+  const vc = getSemanticVector(c);
+
+  // Target = A - B + C
+  const target = va.map((x, i) => x - vb[i] + vc[i]);
+  const targetNorm = normalize(target);
+
+  // Find closest words in SEMANTIC_BASE
+  const candidates = Object.keys(SEMANTIC_BASE)
+    .filter(w => w !== a && w !== b && w !== c)
+    .map(w => ({ word: w, sim: similarity(targetNorm, getSemanticVector(w)) }))
+    .sort((p, q) => q.sim - p.sim);
+
+  const top = candidates.slice(0, 4);
+  const resultBox = document.getElementById("analogy-result-box");
+
+  let html = `
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-2 font-mono">
+      <span>Vector Equation: <strong class="text-cyan-300">"${a}"</strong> - <strong class="text-rose-300">"${b}"</strong> + <strong class="text-emerald-300">"${c}"</strong></span>
+      <span class="text-amber-400 font-bold">Predicted Target: "${top[0]?.word}"</span>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">`;
+
+  top.forEach((item, idx) => {
+    const isWinner = idx === 0;
+    html += `
+      <div class="p-2 rounded ${isWinner ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-200' : 'bg-slate-800 text-slate-300'}">
+        <div class="font-bold flex justify-between">
+          <span>#${idx + 1} ${item.word}</span>
+          <span>${item.sim.toFixed(3)}</span>
+        </div>
+        <div class="w-full bg-slate-700 h-1 rounded mt-1 overflow-hidden">
+          <div class="bg-cyan-400 h-full" style="width: ${Math.max(0, item.sim * 100)}%"></div>
+        </div>
+      </div>`;
+  });
+  html += '</div>';
+  resultBox.innerHTML = html;
+}
+
+// PCA to 3D with Power Iteration & Deflation
+function pcaTo3D(vectors) {
+  const n = vectors.length;
+  const d = vectors[0].length;
+
+  // 1. Center data
+  const mean = new Array(d).fill(0);
+  for (const v of vectors) for (let j = 0; j < d; j++) mean[j] += v[j] / n;
+  const X = vectors.map(v => v.map((x, j) => x - mean[j]));
+
+  // 2. Sample Covariance Matrix C (d x d)
+  const C = [];
+  for (let a = 0; a < d; a++) {
+    C.push(new Array(d).fill(0));
+    for (let b = 0; b < d; b++) {
+      for (let i = 0; i < n; i++) C[a][b] += X[i][a] * X[i][b];
+      C[a][b] /= Math.max(1, n - 1);
+    }
+  }
+
+  // 3. Power iteration with deflation
+  const components = [];
+  const eigenvalues = [];
+  for (let k = 0; k < 3; k++) {
+    let v = normalize(Array.from({ length: d }, (_, j) => Math.sin(j + 1 + k * 7)));
+    for (let iter = 0; iter < 60; iter++) {
+      v = normalize(C.map(row => dot(row, v)));
+    }
+    const lambda = dot(v, C.map(row => dot(row, v)));
+    components.push(v);
+    eigenvalues.push(Math.max(0, lambda));
+
+    // Deflation
+    for (let a = 0; a < d; a++) {
+      for (let b = 0; b < d; b++) {
+        C[a][b] -= lambda * v[a] * v[b];
+      }
+    }
+  }
+
+  // Update variance stats
+  const totalVariance = eigenvalues.reduce((s, x) => s + x, 0) || 1;
+  const v1 = ((eigenvalues[0] / totalVariance) * 100).toFixed(1);
+  const v2 = ((eigenvalues[1] / totalVariance) * 100).toFixed(1);
+  const v3 = ((eigenvalues[2] / totalVariance) * 100).toFixed(1);
+  const varLabel = document.getElementById("pca-variance-text");
+  if (varLabel) {
+    varLabel.textContent = `Variance Explained: PC1 ~${v1}%, PC2 ~${v2}%, PC3 ~${v3}%`;
+  }
+
+  // 4. Project
+  return X.map(x => components.map(c => dot(x, c)));
+}
+
+function drawPlot(points, sentences) {
+  const trace = {
+    type: "scatter3d",
+    mode: "markers+text",
+    x: points.map(p => p[0]),
+    y: points.map(p => p[1]),
+    z: points.map(p => p[2]),
+    text: sentences.map(s => s.length > 20 ? s.slice(0, 18) + "…" : s),
+    hovertext: sentences,
+    hoverinfo: "text",
+    textposition: "top center",
+    textfont: { family: "JetBrains Mono, monospace", size: 10, color: "#cbd5e1" },
+    marker: {
+      size: sentences.map(s => s === userText ? 14 : 7),
+      color: sentences.map(s => s === userText ? "#f59e0b" : "#06b6d4"),
+      opacity: 0.9,
+      line: {
+        color: sentences.map(s => s === userText ? "#ffffff" : "#0f172a"),
+        width: sentences.map(s => s === userText ? 3 : 1)
+      }
+    }
+  };
+
+  const layout = {
+    margin: { l: 0, r: 0, t: 0, b: 0 },
+    paper_bgcolor: "#090d16",
+    plot_bgcolor: "#090d16",
+    scene: {
+      xaxis: { title: "PC 1", color: "#64748b", gridcolor: "#1e293b", zerolinecolor: "#334155" },
+      yaxis: { title: "PC 2", color: "#64748b", gridcolor: "#1e293b", zerolinecolor: "#334155" },
+      zaxis: { title: "PC 3", color: "#64748b", gridcolor: "#1e293b", zerolinecolor: "#334155" },
+      camera: { eye: { x: 1.5, y: 1.5, z: 1.2 } }
+    }
+  };
+
+  Plotly.newPlot("plot", [trace], layout, { responsive: true, displayModeBar: false });
+}
+
+function showClosestPairs(vectors, sentences) {
+  const pairs = [];
+  for (let i = 0; i < vectors.length; i++) {
+    for (let j = i + 1; j < vectors.length; j++) {
+      pairs.push({
+        a: sentences[i],
+        b: sentences[j],
+        score: similarity(vectors[i], vectors[j])
+      });
+    }
+  }
+  pairs.sort((p, q) => q.score - p.score);
+
+  let rows = "";
+  pairs.slice(0, 6).forEach((p, idx) => {
+    rows += `
+      <tr class="border-b border-slate-800/60 hover:bg-slate-800/40 text-slate-300">
+        <td class="py-1.5 px-3 font-mono text-cyan-400">#${idx + 1}</td>
+        <td class="py-1.5 px-3">${escapeHtml(p.a)}</td>
+        <td class="py-1.5 px-3">${escapeHtml(p.b)}</td>
+        <td class="py-1.5 px-3 font-mono text-right text-emerald-400 font-bold">${p.score.toFixed(3)}</td>
+      </tr>`;
+  });
+
+  document.getElementById("pairs-output").innerHTML = `
+    <div class="flex items-center justify-between mb-2">
+      <h3 class="text-sm font-bold text-white font-mono uppercase tracking-wider">Top Semantic Closest Pairs (Full 64D Space)</h3>
+      <span class="text-xs text-slate-400 font-mono">Ranked by Cosine Similarity</span>
+    </div>
+    <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/80 text-xs">
+      <table class="w-full text-left border-collapse">
+        <thead class="bg-slate-900 border-b border-slate-800 text-[11px] font-mono uppercase text-slate-400">
+          <tr>
+            <th class="py-2 px-3">Rank</th>
+            <th class="py-2 px-3">Sentence A</th>
+            <th class="py-2 px-3">Sentence B</th>
+            <th class="py-2 px-3 text-right">Cosine Similarity</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+async function embedAndPlot() {
+  const status = document.getElementById("embed-status");
+  status.textContent = "";
+  const sentences = document.getElementById("sentences").value
+    .split("\n").map(s => s.trim()).filter(Boolean);
+
+  if (sentences.length < 4) {
+    status.textContent = "Please enter at least 4 sentences.";
+    return;
+  }
+
+  const vectors = sentences.map(spellingVector);
+  const points = pcaTo3D(vectors);
+
+  drawPlot(points, sentences);
+  showClosestPairs(vectors, sentences);
+  if (sentences.includes(userText)) showUserWordDetails(vectors, sentences);
+
+  // Sync with Section 3 Matrix
+  renderSimilarityMatrix(vectors, sentences);
+}
+
+async function addUserWord() {
+  const text = document.getElementById("new-word").value.trim();
+  if (text === "") return;
+
+  if (vocab === null) buildVocabulary();
+  const tokens = encode(text);
+
+  document.getElementById("new-word-output").innerHTML = `
+    <div class="mt-3 p-4 rounded-xl bg-slate-950 border border-amber-500/30 space-y-3 font-mono text-xs">
+      <div class="text-amber-300 font-bold">Step 1 — Tokenized Subword IDs:</div>
+      ${renderChips(tokens)}
+      <div id="new-word-vector"></div>
+    </div>`;
+
+  const box = document.getElementById("sentences");
+  const lines = box.value.split("\n").map(s => s.trim());
+  if (!lines.includes(text)) box.value = box.value.trimEnd() + "\n" + text;
+
+  userText = text;
+  await embedAndPlot();
+}
+
+function showUserWordDetails(vectors, sentences) {
+  const me = sentences.indexOf(userText);
+  if (me === -1) return;
+  const v = vectors[me];
+
+  const others = sentences
+    .map((s, i) => ({ s, score: similarity(v, vectors[i]) }))
+    .filter((_, i) => i !== me)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
+  let rows = "";
+  others.forEach(o => {
+    rows += `
+      <tr class="border-b border-slate-800 text-slate-300">
+        <td class="py-1 px-2">${escapeHtml(o.s)}</td>
+        <td class="py-1 px-2 font-mono text-emerald-400 font-bold text-right">${o.score.toFixed(3)}</td>
+      </tr>`;
+  });
+
+  const vectorEl = document.getElementById("new-word-vector");
+  if (vectorEl) {
+    vectorEl.innerHTML = `
+      <div class="pt-2 border-t border-slate-900 space-y-2">
+        <div class="text-cyan-300 font-bold">Step 2 — 64D Vector Representation (First 8 Coordinates):</div>
+        <code class="block p-2 rounded bg-slate-900 text-slate-300 font-mono text-[11px] overflow-x-auto">
+          [${v.slice(0, 8).map(x => x.toFixed(3)).join(", ")}, ...]
+        </code>
+        <div class="text-amber-400 font-bold">Step 3 — Projected into 3D Space (Orange Beacon). Nearest Neighbours:</div>
+        <table class="w-full text-left border-collapse text-xs">
+          <thead><tr class="border-b border-slate-800 text-slate-500 font-mono"><th>Neighbor</th><th class="text-right">Cosine Sim</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+}
+
+// =====================================================================
+// PART 3: VECTOR COMPASS & COSINE SIMILARITY
+// =====================================================================
+let angleU = 30; // deg
+let angleV = 75; // deg
+const canvas = document.getElementById("vector-canvas");
+let isDraggingU = false;
+let isDraggingV = false;
+
+function drawVectorCompass() {
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  const cx = w / 2, cy = h / 2;
+  const r = 130; // vector length in px
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Background Grid & Circle
+  ctx.strokeStyle = "#1e293b";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx - r - 20, cy); ctx.lineTo(cx + r + 20, cy);
+  ctx.moveTo(cx, cy - r - 20); ctx.lineTo(cx, cy + r + 20);
+  ctx.stroke();
+
+  // Subtended angle arc
+  const radU = (angleU * Math.PI) / 180;
+  const radV = (angleV * Math.PI) / 180;
+
+  ctx.beginPath();
+  ctx.strokeStyle = "rgba(245, 158, 11, 0.4)";
+  ctx.lineWidth = 4;
+  ctx.arc(cx, cy, 40, -Math.max(radU, radV), -Math.min(radU, radV));
+  ctx.stroke();
+
+  // Vector U (Cyan)
+  const ux = cx + r * Math.cos(radU);
+  const uy = cy - r * Math.sin(radU);
+  drawArrow(ctx, cx, cy, ux, uy, "#06b6d4", "u");
+
+  // Vector V (Emerald)
+  const vx = cx + r * Math.cos(radV);
+  const vy = cy - r * Math.sin(radV);
+  drawArrow(ctx, cx, cy, vx, vy, "#10b981", "v");
+
+  // Compute metrics
+  updateVectorMetrics(radU, radV);
+}
+
+function drawArrow(ctx, fromX, fromY, toX, toY, color, label) {
+  const headlen = 12;
+  const dx = toX - fromX;
+  const dy = toY - fromY;
+  const angle = Math.atan2(dy, dx);
+
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 3;
+
+  ctx.beginPath();
+  ctx.moveTo(fromX, fromY);
+  ctx.lineTo(toX, toY);
+  ctx.stroke();
+
+  // Arrowhead
+  ctx.beginPath();
+  ctx.moveTo(toX, toY);
+  ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+  ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+  ctx.closePath();
+  ctx.fill();
+
+  // Label
+  ctx.font = "bold 14px JetBrains Mono, monospace";
+  ctx.fillText(label, toX + 10 * Math.cos(angle), toY + 10 * Math.sin(angle));
+}
+
+function updateVectorMetrics(radU, radV) {
+  const diffDeg = Math.abs(angleU - angleV) % 360;
+  const acuteDeg = diffDeg > 180 ? 360 - diffDeg : diffDeg;
+  const cosSim = Math.cos((acuteDeg * Math.PI) / 180);
+  const euclidDist = Math.sqrt(2 - 2 * cosSim);
+
+  document.getElementById("calc-angle").textContent = `${acuteDeg.toFixed(1)}°`;
+  document.getElementById("calc-dot").textContent = cosSim.toFixed(3);
+  document.getElementById("calc-norms").textContent = "1.000, 1.000";
+  document.getElementById("calc-euclid").textContent = euclidDist.toFixed(3);
+
+  const cosEl = document.getElementById("calc-cosine");
+  cosEl.textContent = (cosSim >= 0 ? "+" : "") + cosSim.toFixed(3);
+
+  const badge = document.getElementById("cosine-status-badge");
+  if (cosSim > 0.95) {
+    badge.textContent = "Nearly Parallel: Identical Semantic Direction";
+    badge.className = "mt-2 text-center py-1 rounded bg-emerald-500/20 border border-emerald-500/40 text-[11px] text-emerald-300";
+  } else if (cosSim > 0.1) {
+    badge.textContent = "Acute Angle: Positive Semantic Correlation";
+    badge.className = "mt-2 text-center py-1 rounded bg-cyan-500/20 border border-cyan-500/40 text-[11px] text-cyan-300";
+  } else if (Math.abs(cosSim) <= 0.1) {
+    badge.textContent = "Orthogonal (90°): Zero Correlation / Unrelated";
+    badge.className = "mt-2 text-center py-1 rounded bg-slate-800 border border-slate-700 text-[11px] text-slate-300";
+  } else {
+    badge.textContent = "Obtuse / Opposite: Negative Correlation / Antonym";
+    badge.className = "mt-2 text-center py-1 rounded bg-rose-500/20 border border-rose-500/40 text-[11px] text-rose-300";
+  }
+}
+
+function setupVectorCompassEvents() {
+  const sliderU = document.getElementById("slider-u");
+  const sliderV = document.getElementById("slider-v");
+
+  sliderU.addEventListener("input", function() {
+    angleU = Number(this.value);
+    document.getElementById("slider-u-val").textContent = `${angleU}°`;
+    drawVectorCompass();
+  });
+
+  sliderV.addEventListener("input", function() {
+    angleV = Number(this.value);
+    document.getElementById("slider-v-val").textContent = `${angleV}°`;
+    drawVectorCompass();
+  });
+
+  document.querySelectorAll(".angle-preset").forEach(btn => {
+    btn.addEventListener("click", function() {
+      const targetDeg = Number(this.getAttribute("data-deg"));
+      angleU = 30;
+      angleV = (angleU + targetDeg) % 360;
+      sliderU.value = angleU;
+      sliderV.value = angleV;
+      document.getElementById("slider-u-val").textContent = `${angleU}°`;
+      document.getElementById("slider-v-val").textContent = `${angleV}°`;
+      drawVectorCompass();
+    });
+  });
+}
+
+function renderSimilarityMatrix(vectors, sentences) {
+  const container = document.getElementById("similarity-matrix-container");
+  if (!container) return;
+
+  const n = Math.min(sentences.length, 8); // Display first 8 for clear layout
+  let headerCols = "<th></th>";
+  for (let j = 0; j < n; j++) {
+    const label = sentences[j].length > 12 ? sentences[j].slice(0, 10) + "…" : sentences[j];
+    headerCols += `<th class="p-2 font-mono text-[10px] text-slate-400 rotate-0 truncate max-w-[90px]" title="${escapeHtml(sentences[j])}">${label}</th>`;
+  }
+
+  let rows = "";
+  for (let i = 0; i < n; i++) {
+    const rowLabel = sentences[i].length > 16 ? sentences[i].slice(0, 14) + "…" : sentences[i];
+    let cells = `<td class="p-2 font-mono text-[11px] text-slate-400 truncate max-w-[120px]" title="${escapeHtml(sentences[i])}">${rowLabel}</td>`;
+    for (let j = 0; j < n; j++) {
+      const sim = similarity(vectors[i], vectors[j]);
+      const alpha = Math.max(0.1, (sim + 1) / 2);
+      const bg = sim >= 0.8 ? `rgba(16, 185, 129, ${alpha})` : (sim >= 0.3 ? `rgba(6, 182, 212, ${alpha})` : `rgba(30, 41, 59, 0.6)`);
+      cells += `
+        <td class="p-2 text-center font-mono text-[11px] border border-slate-800/80 cursor-pointer hover:border-cyan-400 transition" style="background-color: ${bg}; color: #ffffff;" title="${sentences[i]} ↔ ${sentences[j]}: ${sim.toFixed(3)}">
+          ${sim.toFixed(2)}
+        </td>`;
+    }
+    rows += `<tr>${cells}</tr>`;
+  }
+
+  container.innerHTML = `
+    <table class="w-full text-left border-collapse">
+      <thead><tr class="border-b border-slate-800">${headerCols}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// =====================================================================
+// PART 4: POSITIONAL ENCODING
+// =====================================================================
+function drawPositionalWaves() {
+  const canvas = document.getElementById("pos-wave-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  const cy = h / 2;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Background Grid
+  ctx.strokeStyle = "#131b2e";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = 0; x < w; x += 40) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+  for (let y = 0; y < h; y += 40) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+  ctx.stroke();
+
+  // Center line
+  ctx.strokeStyle = "#334155";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, cy); ctx.lineTo(w, cy);
+  ctx.stroke();
+
+  const pos = Number(document.getElementById("pos-slider").value);
+  const dimIdx = Number(document.getElementById("dim-slider").value);
+  const d_model = 32;
+
+  // Draw 3 reference wave frequencies
+  const frequencies = [0, 4, 12];
+  const colors = ["#f59e0b", "#06b6d4", "#a855f7"];
+
+  frequencies.forEach((fDim, idx) => {
+    const divTerm = Math.pow(10000, (2 * fDim) / d_model);
+    ctx.strokeStyle = colors[idx];
+    ctx.lineWidth = fDim === dimIdx ? 3 : 1.5;
+    ctx.beginPath();
+
+    for (let x = 0; x < w; x++) {
+      const p = (x / w) * 32;
+      const y = cy - Math.sin(p / divTerm) * (h * 0.38);
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  });
+
+  // Current position vertical beacon
+  const posX = (pos / 32) * w;
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(posX, 0); ctx.lineTo(posX, h);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Marker point on active wave
+  const activeDiv = Math.pow(10000, (2 * dimIdx) / d_model);
+  const activeY = cy - Math.sin(pos / activeDiv) * (h * 0.38);
+
+  ctx.fillStyle = "#f59e0b";
+  ctx.beginPath();
+  ctx.arc(posX, activeY, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  document.getElementById("pos-inspect-label").textContent =
+    `pos = ${pos} | PE(pos, ${dimIdx * 2}) = ${Math.sin(pos / activeDiv).toFixed(3)}`;
+}
+
+function drawPositionalHeatmap() {
+  const canvas = document.getElementById("pe-heatmap-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const L = 16, d = 32;
+  const cw = canvas.width / d;
+  const ch = canvas.height / L;
+
+  for (let pos = 0; pos < L; pos++) {
+    for (let i = 0; i < d / 2; i++) {
+      const div = Math.pow(10000, (2 * i) / d);
+      const sinVal = Math.sin(pos / div);
+      const cosVal = Math.cos(pos / div);
+
+      // Sin col (2i)
+      const sinAlpha = (sinVal + 1) / 2;
+      ctx.fillStyle = `rgb(${Math.floor(sinAlpha * 245)}, ${Math.floor(sinAlpha * 158)}, 11)`;
+      ctx.fillRect(i * 2 * cw, pos * ch, cw, ch);
+
+      // Cos col (2i + 1)
+      const cosAlpha = (cosVal + 1) / 2;
+      ctx.fillStyle = `rgb(6, ${Math.floor(cosAlpha * 182)}, ${Math.floor(cosAlpha * 212)})`;
+      ctx.fillRect((i * 2 + 1) * cw, pos * ch, cw, ch);
+    }
+  }
+}
+
+// =====================================================================
+// PART 5: SELF-ATTENTION ENGINE
+// =====================================================================
+let currentHead = 1;
+let currentAttnTokens = [];
+
+function computeAttentionScores(tokens) {
+  const N = tokens.length;
+  const isCausal = document.getElementById("causal-mask-toggle").checked;
+  const A = [];
+
+  for (let i = 0; i < N; i++) {
+    const row = new Array(N).fill(0);
+    const qi = tokens[i].toLowerCase();
+
+    for (let j = 0; j < N; j++) {
+      if (isCausal && j > i) {
+        row[j] = -1e9; // Causal mask
+        continue;
+      }
+
+      const kj = tokens[j].toLowerCase();
+      let affinity = 0.5;
+
+      // Head 1: Syntactic (Neighbor affinity)
+      if (currentHead === 1) {
+        const dist = Math.abs(i - j);
+        affinity = Math.max(0.1, 3.0 - dist * 0.8);
+      }
+      // Head 2: Coreference resolution ("it" -> "animal" / "street")
+      else if (currentHead === 2) {
+        if (qi === "it") {
+          if (kj === "animal" || kj === "dog" || kj === "cat") affinity = 4.5;
+          else if (kj === "street") affinity = tokens.includes("wide") ? 4.8 : 1.2;
+          else affinity = 0.2;
+        } else {
+          affinity = (i === j) ? 2.5 : 0.4;
+        }
+      }
+      // Head 3: Context / Polysemy ("bank" -> "loan" / "river")
+      else {
+        if (qi === "bank" && (kj === "loan" || kj === "approved" || kj === "startup")) affinity = 4.2;
+        else if (qi === "bank" && (kj === "river" || kj === "mud" || kj === "moss")) affinity = 4.0;
+        else affinity = (i === j) ? 2.0 : 0.6;
+      }
+
+      row[j] = affinity;
+    }
+
+    // Scaled Dot-Product & Softmax across row
+    const scale = Math.sqrt(4); // d_k = 4
+    const scaled = row.map(v => v / scale);
+    const maxVal = Math.max(...scaled);
+    const exps = scaled.map(v => (v < -1e8 ? 0 : Math.exp(v - maxVal)));
+    const sumExp = exps.reduce((s, x) => s + x, 0) || 1;
+    A.push(exps.map(e => e / sumExp));
+  }
+
+  return A;
+}
+
+function renderAttentionMatrix() {
+  const sentence = document.getElementById("attn-sentence-input").value.trim();
+  const tokens = splitIntoWords(sentence);
+  currentAttnTokens = tokens;
+  const A = computeAttentionScores(tokens);
+  const N = tokens.length;
+
+  let tableHtml = '<table class="border-collapse font-mono text-xs select-none">';
+  tableHtml += '<thead><tr><th></th>';
+  tokens.forEach((t, j) => {
+    tableHtml += `<th class="p-1.5 text-[11px] text-slate-400 font-normal max-w-[60px] truncate" title="${t}">${t}</th>`;
+  });
+  tableHtml += '</tr></thead><tbody>';
+
+  for (let i = 0; i < N; i++) {
+    tableHtml += `<tr><td class="p-1.5 text-[11px] text-slate-300 font-bold text-right pr-2">${tokens[i]}</td>`;
+    for (let j = 0; j < N; j++) {
+      const weight = A[i][j];
+      const isMasked = weight === 0 && document.getElementById("causal-mask-toggle").checked && j > i;
+      const bg = isMasked ? '#090d16' : `rgba(168, 85, 247, ${Math.max(0.08, weight)})`;
+      const textColor = weight > 0.4 ? '#ffffff' : '#94a3b8';
+
+      tableHtml += `
+        <td class="attn-cell p-1.5 text-center border border-slate-800 text-[10px] cursor-pointer"
+            style="background-color: ${bg}; color: ${textColor};"
+            onmouseover="focusAttentionToken(${i}, ${j}, ${weight})"
+            title="Q: '${tokens[i]}' -> K: '${tokens[j]}' (Weight: ${weight.toFixed(3)})">
+          ${isMasked ? '—' : weight.toFixed(2)}
+        </td>`;
+    }
+    tableHtml += '</tr>';
+  }
+  tableHtml += '</tbody></table>';
+
+  document.getElementById("attention-matrix-grid").innerHTML = tableHtml;
+
+  // Default focus on token "it" if present, else first token
+  const defaultIdx = tokens.indexOf("it") !== -1 ? tokens.indexOf("it") : 0;
+  focusAttentionToken(defaultIdx, defaultIdx, A[defaultIdx][defaultIdx]);
+}
+
+function focusAttentionToken(queryIdx, keyIdx, weight) {
+  const tokens = currentAttnTokens;
+  if (!tokens[queryIdx]) return;
+
+  const A = computeAttentionScores(tokens);
+  const rowWeights = A[queryIdx];
+
+  document.getElementById("focus-token-badge").textContent = `"${tokens[queryIdx]}" (Pos ${queryIdx})`;
+
+  let barsHtml = "";
+  tokens.forEach((tok, j) => {
+    const w = rowWeights[j];
+    const isFocused = j === keyIdx;
+    barsHtml += `
+      <div class="space-y-0.5">
+        <div class="flex justify-between text-[11px]">
+          <span class="${isFocused ? 'text-purple-300 font-bold' : 'text-slate-400'}">${tok}</span>
+          <span class="font-mono text-purple-400">${(w * 100).toFixed(1)}%</span>
+        </div>
+        <div class="w-full bg-slate-900 h-1.5 rounded overflow-hidden border border-slate-800">
+          <div class="bg-purple-500 h-full rounded transition-all duration-200" style="width: ${Math.max(0, w * 100)}%"></div>
+        </div>
+      </div>`;
+  });
+
+  document.getElementById("attn-bars-container").innerHTML = barsHtml;
+}
+
+// =====================================================================
+// PART 6: LAYERNORM & RESIDUAL STREAM
+// =====================================================================
+function updateLayerNorm() {
+  const x1 = Number(document.getElementById("ln-x1").value);
+  const x2 = Number(document.getElementById("ln-x2").value);
+  const x3 = Number(document.getElementById("ln-x3").value);
+  const x4 = Number(document.getElementById("ln-x4").value);
+
+  document.getElementById("ln-v1").textContent = (x1 >= 0 ? "+" : "") + x1.toFixed(1);
+  document.getElementById("ln-v2").textContent = (x2 >= 0 ? "+" : "") + x2.toFixed(1);
+  document.getElementById("ln-v3").textContent = (x3 >= 0 ? "+" : "") + x3.toFixed(1);
+  document.getElementById("ln-v4").textContent = (x4 >= 0 ? "+" : "") + x4.toFixed(1);
+
+  const vec = [x1, x2, x3, x4];
+  const mean = vec.reduce((s, x) => s + x, 0) / 4;
+  const variance = vec.reduce((s, x) => s + Math.pow(x - mean, 2), 0) / 4;
+  const std = Math.sqrt(variance + 1e-5);
+  const normalized = vec.map(x => (x - mean) / std);
+
+  document.getElementById("ln-output-card").innerHTML = `
+    <div class="flex justify-between text-slate-400 border-b border-slate-800 pb-1">
+      <span>Vector Mean ($\mu$): <strong class="text-white">${mean.toFixed(2)}</strong></span>
+      <span>Variance ($\sigma^2$): <strong class="text-white">${variance.toFixed(2)}</strong></span>
+    </div>
+    <div class="pt-1 text-slate-300">
+      <span class="text-rose-400 font-bold">Normalized Output $\hat{\mathbf{x}}$ ($\mu=0, \sigma^2=1$):</span>
+      <div class="grid grid-cols-4 gap-2 mt-1.5 text-center font-bold">
+        ${normalized.map(val => `<span class="p-1 rounded bg-slate-800 text-rose-300">${(val >= 0 ? "+" : "") + val.toFixed(2)}</span>`).join("")}
+      </div>
+    </div>`;
+}
+
+// =====================================================================
+// PART 7 & 8: LOGITS, SOFTMAX & SAMPLING
+// =====================================================================
+const PRESET_DISTRIBUTIONS = {
+  "the capital of france is": [
+    { token: "Paris", logit: 9.2 },
+    { token: "Lyon", logit: 4.1 },
+    { token: "Marseille", logit: 3.8 },
+    { token: "a", logit: 3.2 },
+    { token: "located", logit: 2.8 },
+    { token: "the", logit: 2.5 },
+    { token: "Europe", logit: 2.1 },
+    { token: "France", logit: 1.8 },
+    { token: "Toulouse", logit: 1.5 },
+    { token: "known", logit: 1.1 }
+  ],
+  "artificial intelligence will revolutionize": [
+    { token: "healthcare", logit: 8.4 },
+    { token: "education", logit: 7.9 },
+    { token: "software", logit: 7.6 },
+    { token: "society", logit: 7.1 },
+    { token: "the", logit: 6.8 },
+    { token: "our", logit: 6.2 },
+    { token: "industries", logit: 5.7 },
+    { token: "how", logit: 5.3 },
+    { token: "everything", logit: 4.9 },
+    { token: "science", logit: 4.4 }
+  ],
+  "the programmer fixed the critical bug in the": [
+    { token: "code", logit: 9.5 },
+    { token: "database", logit: 7.8 },
+    { token: "system", logit: 7.4 },
+    { token: "backend", logit: 7.0 },
+    { token: "pipeline", logit: 6.5 },
+    { token: "compiler", logit: 6.1 },
+    { token: "algorithm", logit: 5.8 },
+    { token: "server", logit: 5.4 },
+    { token: "application", logit: 5.0 },
+    { token: "function", logit: 4.6 }
+  ],
+  "in a deep learning transformer, attention": [
+    { token: "mechanisms", logit: 8.8 },
+    { token: "weights", logit: 8.1 },
+    { token: "is", logit: 7.9 },
+    { token: "allows", logit: 7.3 },
+    { token: "heads", logit: 7.0 },
+    { token: "enables", logit: 6.6 },
+    { token: "scores", logit: 6.2 },
+    { token: "provides", logit: 5.8 },
+    { token: "layers", logit: 5.4 },
+    { token: "computes", logit: 5.0 }
+  ]
+};
+
+function getCandidatesForPrompt(prompt) {
+  const key = prompt.toLowerCase().trim();
+  if (PRESET_DISTRIBUTIONS[key]) return JSON.parse(JSON.stringify(PRESET_DISTRIBUTIONS[key]));
+
+  // Dynamic fallback for custom prompts
+  const words = ["model", "data", "system", "process", "result", "future", "world", "algorithm", "state", "user"];
+  return words.map((w, idx) => ({ token: w, logit: 8.0 - idx * 0.7 }));
+}
+
+function computeSamplingDistribution() {
+  const prompt = document.getElementById("prompt-context-input").value;
+  const temp = Number(document.getElementById("temp-slider").value);
+  const topK = Number(document.getElementById("topk-slider").value);
+  const topP = Number(document.getElementById("topp-slider").value);
+
+  const rawCandidates = getCandidatesForPrompt(prompt);
+
+  // 1. Temperature scaling: z_i / T
+  const scaled = rawCandidates.map(c => ({
+    ...c,
+    scaledLogit: c.logit / temp
+  }));
+
+  // Subtract max for numerical stability
+  const maxLogit = Math.max(...scaled.map(c => c.scaledLogit));
+  const exps = scaled.map(c => ({
+    ...c,
+    expVal: Math.exp(c.scaledLogit - maxLogit)
+  }));
+  const totalExp = exps.reduce((s, c) => s + c.expVal, 0) || 1;
+
+  // Unfiltered softmax probabilities
+  let candidates = exps.map(c => ({
+    ...c,
+    rawProb: c.expVal / totalExp
+  })).sort((a, b) => b.rawProb - a.rawProb);
+
+  // 2. Top-K filtering
+  candidates.forEach((c, idx) => {
+    c.passedTopK = idx < topK;
+  });
+
+  // 3. Top-P (Nucleus) filtering
+  let cumSum = 0;
+  candidates.forEach((c, idx) => {
+    cumSum += c.rawProb;
+    c.cumProb = cumSum;
+    c.passedTopP = (cumSum - c.rawProb < topP);
+  });
+
+  // Renormalize active candidates
+  const activeCandidates = candidates.filter(c => c.passedTopK && c.passedTopP);
+  const activeSum = activeCandidates.reduce((s, c) => s + c.rawProb, 0) || 1;
+
+  candidates.forEach(c => {
+    c.finalProb = (c.passedTopK && c.passedTopP) ? (c.rawProb / activeSum) : 0;
+  });
+
+  return candidates;
+}
+
+function renderSamplingUI() {
+  const candidates = computeSamplingDistribution();
+
+  // Render Table
+  let tableRows = "";
+  candidates.forEach((c, idx) => {
+    const isEligible = c.passedTopK && c.passedTopP;
+    const badgeColor = isEligible ? 'bg-teal-500/20 text-teal-300 border-teal-500/40' : 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+    const statusText = !c.passedTopK ? 'Pruned (Top-K)' : (!c.passedTopP ? 'Pruned (Top-P)' : 'Active Candidate');
+
+    tableRows += `
+      <tr class="border-b border-slate-800/60 ${isEligible ? 'text-slate-200' : 'text-slate-500 opacity-60'}">
+        <td class="py-1.5 px-3 font-mono">#${idx + 1}</td>
+        <td class="py-1.5 px-3 font-mono font-bold text-white">${c.token}</td>
+        <td class="py-1.5 px-3 font-mono">${c.logit.toFixed(1)}</td>
+        <td class="py-1.5 px-3 font-mono font-bold ${isEligible ? 'text-teal-400' : 'text-slate-500'}">
+          ${(c.finalProb * 100).toFixed(1)}%
+        </td>
+        <td class="py-1.5 px-3 font-mono text-[10px] text-slate-400">${(c.cumProb * 100).toFixed(1)}%</td>
+        <td class="py-1.5 px-3">
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono border ${badgeColor}">${statusText}</span>
+        </td>
+      </tr>`;
+  });
+
+  document.getElementById("candidate-table-container").innerHTML = `
+    <table class="w-full text-left border-collapse text-xs">
+      <thead class="bg-slate-900 border-b border-slate-800 text-[11px] font-mono uppercase text-slate-400">
+        <tr>
+          <th class="py-2 px-3">Rank</th>
+          <th class="py-2 px-3">Token</th>
+          <th class="py-2 px-3">Logit</th>
+          <th class="py-2 px-3">Renorm Prob</th>
+          <th class="py-2 px-3">Cum P</th>
+          <th class="py-2 px-3">Filter Status</th>
+        </tr>
+      </thead>
+      <tbody>${tableRows}</tbody>
+    </table>`;
+
+  // Render Histogram Bars
+  let barsHtml = "";
+  candidates.slice(0, 7).forEach(c => {
+    const isEligible = c.passedTopK && c.passedTopP;
+    barsHtml += `
+      <div class="space-y-0.5">
+        <div class="flex justify-between text-[11px]">
+          <span class="${isEligible ? 'text-slate-200 font-bold' : 'text-slate-500 line-through'}">${c.token}</span>
+          <span class="font-mono text-teal-400">${(c.finalProb * 100).toFixed(1)}%</span>
+        </div>
+        <div class="w-full bg-slate-900 h-2 rounded overflow-hidden border border-slate-800">
+          <div class="${isEligible ? 'bg-gradient-to-r from-teal-500 to-emerald-400' : 'bg-slate-700'} h-full rounded transition-all duration-300" style="width: ${c.finalProb * 100}%"></div>
+        </div>
+      </div>`;
+  });
+
+  document.getElementById("prob-bars-container").innerHTML = barsHtml;
+}
+
+function sampleOneToken() {
+  const candidates = computeSamplingDistribution().filter(c => c.passedTopK && c.passedTopP);
+  if (candidates.length === 0) return;
+
+  // True weighted random roll
+  const r = Math.random();
+  let cum = 0;
+  let winner = candidates[0];
+
+  for (const c of candidates) {
+    cum += c.finalProb;
+    if (r <= cum) {
+      winner = c;
+      break;
+    }
+  }
+
+  const promptInput = document.getElementById("prompt-context-input");
+  promptInput.value = promptInput.value.trim() + " " + winner.token;
+
+  const toast = document.getElementById("sampling-toast");
+  toast.innerHTML = `Sampled: <strong class="text-teal-300">"${winner.token}"</strong> (p = ${(winner.finalProb * 100).toFixed(1)}%, roll = ${r.toFixed(3)})`;
+
+  renderSamplingUI();
+}
+
+async function autoGenerateTokens() {
+  for (let i = 0; i < 5; i++) {
+    sampleOneToken();
+    await new Promise(r => setTimeout(r, 400));
+  }
+}
+
+// =====================================================================
+// PART 9: END-TO-END PIPELINE SANDBOX
+// =====================================================================
+let e2eCurrentStep = 1;
+
+function updatePipelineStep(step) {
+  e2eCurrentStep = Math.max(1, Math.min(7, step));
+  const prompt = document.getElementById("e2e-input").value.trim();
+
+  // Update tabs
+  document.querySelectorAll(".e2e-step-tab").forEach(tab => {
+    const s = Number(tab.getAttribute("data-step"));
+    if (s === e2eCurrentStep) {
+      tab.className = "e2e-step-tab p-2.5 rounded-xl border border-indigo-500 bg-indigo-500/20 text-white font-bold transition";
+    } else if (s < e2eCurrentStep) {
+      tab.className = "e2e-step-tab p-2.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 transition";
+    } else {
+      tab.className = "e2e-step-tab p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-500 transition";
+    }
+  });
+
+  const stepBadge = document.getElementById("e2e-step-badge");
+  const stepTitle = document.getElementById("e2e-step-title");
+  const shapeBadge = document.getElementById("e2e-tensor-shape");
+  const viewport = document.getElementById("e2e-viewport-content");
+  const explanation = document.getElementById("e2e-step-explanation");
+
+  stepBadge.textContent = `Step ${e2eCurrentStep} of 7`;
+
+  if (e2eCurrentStep === 1) {
+    stepTitle.textContent = "Step 1: Raw UTF-8 Text Input";
+    shapeBadge.textContent = `Data Type: string (Length: ${prompt.length} chars)`;
+    viewport.innerHTML = `
+      <div class="p-6 rounded-xl bg-slate-900/80 border border-slate-800 font-mono text-base text-slate-100 flex items-center justify-center">
+        "${escapeHtml(prompt)}"
+      </div>`;
+    explanation.innerHTML = `
+      <strong>Transformation:</strong> The raw human prompt enters the system as a discrete sequence of characters or byte sequences before any mathematical operations begin.`;
+  } else if (e2eCurrentStep === 2) {
+    stepTitle.textContent = "Step 2: Subword Tokenizer & Integer IDs";
+    const tokens = encode(prompt);
+    shapeBadge.textContent = `Tensor Shape: [batch_size=1, seq_len=${tokens.length}]`;
+    viewport.innerHTML = `
+      <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+        <div class="text-xs text-slate-400 font-mono mb-2">Discrete Token Vector ($T=${tokens.length}$ integers):</div>
+        ${renderChips(tokens)}
+      </div>`;
+    explanation.innerHTML = `
+      <strong>Transformation:</strong> Vocabulary mapping $S \mapsto [t_1, t_2, \dots, t_T]$. Each subword chunk is mapped to a unique index $ID(t) \in \{0, \dots, |V|-1\}$.`;
+  } else if (e2eCurrentStep === 3) {
+    stepTitle.textContent = "Step 3: Embedding Lookup & Positional Encoding Addition";
+    const tokens = encode(prompt);
+    shapeBadge.textContent = `Tensor Shape: [1, ${tokens.length}, d_model=64]`;
+    viewport.innerHTML = `
+      <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 font-mono text-xs space-y-3">
+        <div class="flex items-center justify-between text-cyan-300">
+          <span>Embedding Matrix Lookup:</span>
+          <span>$E \in \mathbb{R}^{|V| \times 64}$</span>
+        </div>
+        <div class="flex items-center justify-between text-amber-300">
+          <span>Sinusoidal Positional Encoding:</span>
+          <span>$PE \in \mathbb{R}^{${tokens.length} \times 64}$</span>
+        </div>
+        <div class="p-2.5 rounded bg-slate-950 border border-slate-800 text-white font-bold flex justify-between">
+          <span>Combined Layer-0 Tensor:</span>
+          <span>$X_0 = E(t) + PE(pos) \in \mathbb{R}^{1 \times ${tokens.length} \times 64}$</span>
+        </div>
+      </div>`;
+    explanation.innerHTML = `
+      <strong>Transformation:</strong> Continuous vector transformation. Tokens become dense geometric vectors, and temporal frequencies are added so the Transformer knows token order.`;
+  } else if (e2eCurrentStep === 4) {
+    stepTitle.textContent = "Step 4: Multi-Head Scaled Dot-Product Attention";
+    const tokens = splitIntoWords(prompt);
+    shapeBadge.textContent = `Attention Matrix: [${tokens.length}, ${tokens.length}] per Head`;
+    viewport.innerHTML = `
+      <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 font-mono text-xs space-y-2">
+        <div class="text-purple-300 font-bold mb-1">Causal Masked Self-Attention Matrix:</div>
+        <div class="flex justify-center">${document.getElementById("attention-matrix-grid").innerHTML}</div>
+      </div>`;
+    explanation.innerHTML = `
+      <strong>Transformation:</strong> Tokens communicate dynamically via Query-Key inner products: $A = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}} + M\right)V$. Causal mask $M$ blocks future tokens.`;
+  } else if (e2eCurrentStep === 5) {
+    stepTitle.textContent = "Step 5: Residual Stream & Feed-Forward Network";
+    const tokens = encode(prompt);
+    shapeBadge.textContent = `Residual Highway: [1, ${tokens.length}, 64]`;
+    viewport.innerHTML = `
+      <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 font-mono text-xs space-y-2 text-slate-300">
+        <div class="flex justify-between border-b border-slate-800 pb-1">
+          <span>Residual Stream Highway:</span>
+          <span class="text-rose-400">$\mathbf{x}_{l+1} = \mathbf{x}_l + \Delta_{\text{Attn}} + \Delta_{\text{FFN}}$</span>
+        </div>
+        <div class="p-2 rounded bg-slate-950 border border-slate-800 text-[11px] text-slate-400">
+          RMSNorm stabilizes the activations across 32 layers. The SwiGLU FFN projects activations to $4 \times d_{\text{model}}$, querying associative factual weights.
+        </div>
+      </div>`;
+    explanation.innerHTML = `
+      <strong>Transformation:</strong> High-capacity non-linear layer. FFN acts as a key-value associative database, injecting world knowledge and factual attributes into the contextual vector.`;
+  } else if (e2eCurrentStep === 6) {
+    stepTitle.textContent = "Step 6: Un-Embedding Head & Softmax Logits";
+    shapeBadge.textContent = `Logit Vector: [1, |V| = 50,000]`;
+    viewport.innerHTML = `
+      <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 font-mono text-xs space-y-2">
+        <div class="text-blue-300 font-bold mb-1">Un-embedding Projection ($W_U \in \mathbb{R}^{d \times |V|}$):</div>
+        ${document.getElementById("prob-bars-container").innerHTML}
+      </div>`;
+    explanation.innerHTML = `
+      <strong>Transformation:</strong> Final projection back to human vocabulary. Logits $z$ are exponentiated and divided by temperature to produce a normalized probability distribution summing to 1.0.`;
+  } else if (e2eCurrentStep === 7) {
+    stepTitle.textContent = "Step 7: Sampled Next Token Generation Winner";
+    const candidates = computeSamplingDistribution().filter(c => c.passedTopK && c.passedTopP);
+    const winner = candidates[0] || { token: "..." };
+    shapeBadge.textContent = `Output Token: "${winner.token}"`;
+    viewport.innerHTML = `
+      <div class="p-6 rounded-xl bg-gradient-to-r from-emerald-500/20 via-slate-900 to-teal-500/20 border border-emerald-500/40 text-center font-mono space-y-2">
+        <div class="text-xs text-slate-400 uppercase tracking-wider">Sampled Token Winner:</div>
+        <div class="text-3xl font-extrabold text-emerald-400 font-mono">"${winner.token}"</div>
+        <div class="text-xs text-slate-400">Appended to sequence for autoregressive step $t+1$</div>
+      </div>`;
+    explanation.innerHTML = `
+      <strong>Autoregressive Loop:</strong> The sampled token is appended to the prompt. The entire pipeline repeats for step $t+1$ using the KV Cache to avoid re-computing previous tokens!`;
+  }
+
+  triggerMathRender();
+}
+
+// =====================================================================
+// PART 10: GLOSSARY DEFINITIONS
+// =====================================================================
+const GLOSSARY_TERMS = [
+  { term: "Byte-Pair Encoding (BPE)", cat: "Tokenization", def: "An iterative subword segmentation algorithm that builds a vocabulary by iteratively replacing the most frequent pair of adjacent bytes/characters with a new combined token." },
+  { term: "Embedding Matrix ($E$)", cat: "Embeddings", def: "A lookup matrix $E \in \mathbb{R}^{|V| \times d_{\text{model}}}$ where each row vector represents the dense, continuous geometric coordinate of a discrete vocabulary token." },
+  { term: "Cosine Similarity", cat: "Vector Geometry", def: "A metric measuring the cosine of the angle between two vectors: $\cos(\theta) = \frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{u}\| \|\mathbf{v}\|}$. Magnitude-invariant and bounded in $[-1, +1]$." },
+  { term: "Positional Encoding (PE)", cat: "Architecture", def: "Vectors added to token embeddings to encode sequence order, overcoming the permutation-invariance of self-attention. Can be sinusoidal (Vaswani 2017), learned, or rotational (RoPE)." },
+  { term: "Rotary Position Embedding (RoPE)", cat: "Architecture", def: "Modern positional encoding (Su et al. 2021) that rotates Query and Key vectors in 2D coordinate planes using complex numbers, naturally implementing relative distance decay." },
+  { term: "Self-Attention", cat: "Core Engine", def: "Mechanism computing contextual token representations: $\text{softmax}(QK^T / \sqrt{d_k})V$, enabling every token to dynamically query and absorb information from all other tokens in the context." },
+  { term: "Causal Masking", cat: "Autoregression", def: "An upper-triangular matrix filled with $-\infty$ added to $QK^T$ prior to softmax, ensuring token $i$ can only attend to previous tokens $j \le i$ and cannot peek into future ground-truth." },
+  { term: "Residual Stream", cat: "Highway", def: "The skip-connection highway $\mathbf{x}_{l+1} = \mathbf{x}_l + f(\mathbf{x}_l)$ that allows gradient signals to backpropagate directly across 32+ layers without vanishing or exploding." },
+  { term: "Layer Normalization / RMSNorm", cat: "Stability", def: "Normalizes the activations of each token vector across its feature dimensions to have zero mean and unit variance (or root-mean-square 1.0), stabilizing deep neural training." },
+  { term: "Feed-Forward Network (FFN)", cat: "Memory", def: "Two-layer projection (often SwiGLU) expanding to $4 \times d_{\text{model}}$. Functions as an associative memory table storing world facts and relational attributes." },
+  { term: "Logits ($z$)", cat: "Outputs", def: "The unnormalized scalar predictions output by the final linear projection layer $W_U$ before being passed into the softmax exponential." },
+  { term: "Softmax Function", cat: "Outputs", def: "Converts an arbitrary logit vector $z$ into a valid categorical probability distribution: $P_i = \frac{\exp(z_i)}{\sum_j \exp(z_j)}$, guaranteeing $\sum P_i = 1$." },
+  { term: "Temperature ($T$)", cat: "Sampling", def: "A hyperparameter dividing logits prior to softmax: $z_i / T$. Low $T \to 0$ collapses probabilities into greedy argmax; high $T > 1$ flattens distribution toward uniform entropy." },
+  { term: "Top-K Sampling", cat: "Sampling", def: "Truncates the candidate sampling pool strictly to the $k$ highest-probability tokens, zeroing out all lower-ranked tokens to prevent tail hallucinations." },
+  { term: "Top-P (Nucleus) Sampling", cat: "Sampling", def: "Dynamically selects the smallest subset of tokens whose cumulative probability exceeds threshold $p$, adapting pool width based on model certainty." },
+  { term: "KV Cache", cat: "Inference", def: "Optimization caching computed Key and Value projection tensors from previous tokens, reducing sequential inference time from $O(N^2)$ to $O(N)$." }
+];
+
+function renderGlossary(filter = "") {
+  const container = document.getElementById("glossary-container");
+  if (!container) return;
+
+  const q = filter.toLowerCase().trim();
+  const filtered = GLOSSARY_TERMS.filter(item =>
+    item.term.toLowerCase().includes(q) ||
+    item.cat.toLowerCase().includes(q) ||
+    item.def.toLowerCase().includes(q)
+  );
+
+  let html = "";
+  filtered.forEach(item => {
+    html += `
+      <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-sm text-indigo-300">${item.term}</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-400 font-mono">${item.cat}</span>
+        </div>
+        <p class="text-slate-300 text-xs leading-relaxed font-sans">${item.def}</p>
+      </div>`;
+  });
+
+  container.innerHTML = html || '<div class="text-slate-500 text-center py-4">No matching concepts found.</div>';
+  triggerMathRender();
+}
+
+// =====================================================================
+// EVENT INITIALIZATION & BOOTSTRAP
+// =====================================================================
+document.addEventListener("DOMContentLoaded", () => {
+  // 1. Math & Code Toggle
+  const toggleMathBtn = document.getElementById("toggle-math-btn");
+  const mathLabel = document.getElementById("math-toggle-label");
+  if (toggleMathBtn) {
+    toggleMathBtn.addEventListener("click", () => {
+      showMathCode = !showMathCode;
+      document.querySelectorAll(".cs-peek").forEach(el => {
+        el.style.display = showMathCode ? "block" : "none";
+      });
+      mathLabel.textContent = `Math & Code: ${showMathCode ? "ON" : "OFF"}`;
+    });
+  }
+
+  // 2. Tokenizer Event Listeners
+  document.getElementById("build-vocab-btn").addEventListener("click", buildVocabulary);
+  document.getElementById("tokenize-btn").addEventListener("click", tokenizeSentence);
+  document.getElementById("vocab-slider").addEventListener("input", function() {
+    applyVocabSize(Number(this.value));
+    if (document.getElementById("token-output").innerHTML !== "") tokenizeSentence();
+  });
+  document.getElementById("step-bpe-btn").addEventListener("click", () => {
+    const box = document.getElementById("bpe-merges-box");
+    box.classList.toggle("hidden");
+  });
+  document.querySelectorAll(".preset-btn").forEach(btn => {
+    btn.addEventListener("click", function() {
+      document.getElementById("encode-input").value = this.getAttribute("data-text");
+      tokenizeSentence();
+    });
+  });
+
+  // 3. Embeddings & 3D Plot Event Listeners
+  document.getElementById("embed-btn").addEventListener("click", embedAndPlot);
+  document.getElementById("add-word-btn").addEventListener("click", addUserWord);
+  document.getElementById("new-word").addEventListener("keydown", e => { if (e.key === "Enter") addUserWord(); });
+  document.getElementById("calc-analogy-btn").addEventListener("click", computeAnalogy);
+  document.querySelectorAll(".analogy-btn").forEach(btn => {
+    btn.addEventListener("click", function() {
+      document.getElementById("vec-a").value = this.getAttribute("data-a");
+      document.getElementById("vec-b").value = this.getAttribute("data-b");
+      document.getElementById("vec-c").value = this.getAttribute("data-c");
+      computeAnalogy();
+    });
+  });
+
+  // 4. Vector Compass Setup
+  setupVectorCompassEvents();
+  drawVectorCompass();
+
+  // 5. Positional Encoding Setup
+  document.getElementById("pos-slider").addEventListener("input", function() {
+    document.getElementById("pos-slider-val").textContent = this.value;
+    drawPositionalWaves();
+  });
+  document.getElementById("dim-slider").addEventListener("input", function() {
+    document.getElementById("dim-slider-val").textContent = `${this.value * 2} (${Number(this.value) < 4 ? "High" : "Low"} Freq)`;
+    drawPositionalWaves();
+  });
+  drawPositionalWaves();
+  drawPositionalHeatmap();
+
+  // 6. Attention Setup
+  document.getElementById("update-attn-btn").addEventListener("click", renderAttentionMatrix);
+  document.getElementById("causal-mask-toggle").addEventListener("change", renderAttentionMatrix);
+  document.querySelectorAll(".attn-preset").forEach(btn => {
+    btn.addEventListener("click", function() {
+      document.querySelectorAll(".attn-preset").forEach(b => b.classList.remove("active"));
+      this.classList.add("active");
+      document.getElementById("attn-sentence-input").value = this.getAttribute("data-text");
+      renderAttentionMatrix();
+    });
+  });
+  document.querySelectorAll(".head-btn").forEach(btn => {
+    btn.addEventListener("click", function() {
+      document.querySelectorAll(".head-btn").forEach(b => {
+        b.className = "head-btn px-2.5 py-1 rounded hover:bg-slate-800 text-slate-400";
+      });
+      this.className = "head-btn px-2.5 py-1 rounded bg-purple-600 text-white font-medium";
+      currentHead = Number(this.getAttribute("data-head"));
+      renderAttentionMatrix();
+    });
+  });
+  renderAttentionMatrix();
+
+  // 7. LayerNorm Setup
+  ["ln-x1", "ln-x2", "ln-x3", "ln-x4"].forEach(id => {
+    document.getElementById(id).addEventListener("input", updateLayerNorm);
+  });
+  updateLayerNorm();
+
+  // 8. Sampling Setup
+  document.getElementById("temp-slider").addEventListener("input", function() {
+    document.getElementById("temp-val").textContent = Number(this.value).toFixed(2);
+    renderSamplingUI();
+  });
+  document.getElementById("topk-slider").addEventListener("input", function() {
+    document.getElementById("topk-val").textContent = this.value;
+    renderSamplingUI();
+  });
+  document.getElementById("topp-slider").addEventListener("input", function() {
+    document.getElementById("topp-val").textContent = Number(this.value).toFixed(2);
+    renderSamplingUI();
+  });
+  document.getElementById("sample-one-btn").addEventListener("click", sampleOneToken);
+  document.getElementById("auto-generate-btn").addEventListener("click", autoGenerateTokens);
+  document.getElementById("reset-prompt-btn").addEventListener("click", () => {
+    document.getElementById("prompt-context-input").value = "The capital of France is";
+    renderSamplingUI();
+  });
+  document.querySelectorAll(".prompt-preset").forEach(btn => {
+    btn.addEventListener("click", function() {
+      document.querySelectorAll(".prompt-preset").forEach(b => b.classList.remove("active"));
+      this.classList.add("active");
+      document.getElementById("prompt-context-input").value = this.getAttribute("data-prompt");
+      renderSamplingUI();
+    });
+  });
+  renderSamplingUI();
+
+  // 9. End-to-End Pipeline Setup
+  document.getElementById("e2e-start-btn").addEventListener("click", () => updatePipelineStep(1));
+  document.getElementById("e2e-next-btn").addEventListener("click", () => updatePipelineStep(e2eCurrentStep + 1));
+  document.getElementById("e2e-prev-btn").addEventListener("click", () => updatePipelineStep(e2eCurrentStep - 1));
+  document.getElementById("e2e-autoplay-btn").addEventListener("click", async () => {
+    for (let s = 1; s <= 7; s++) {
+      updatePipelineStep(s);
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  });
+  document.querySelectorAll(".e2e-step-tab").forEach(tab => {
+    tab.addEventListener("click", function() {
+      updatePipelineStep(Number(this.getAttribute("data-step")));
+    });
+  });
+  document.getElementById("e2e-append-btn").addEventListener("click", () => {
+    const candidates = computeSamplingDistribution().filter(c => c.passedTopK && c.passedTopP);
+    if (candidates.length > 0) {
+      const e2eInput = document.getElementById("e2e-input");
+      e2eInput.value = e2eInput.value.trim() + " " + candidates[0].token;
+      updatePipelineStep(1);
+    }
+  });
+  updatePipelineStep(1);
+
+  // 10. Glossary Modal Setup
+  renderGlossary();
+  document.getElementById("glossary-search").addEventListener("input", function() {
+    renderGlossary(this.value);
+  });
+
+  // Initial runs
+  buildVocabulary();
+  tokenizeSentence();
+  embedAndPlot();
+  computeAnalogy();
+
+  // Trigger KaTeX rendering
+  setTimeout(triggerMathRender, 500);
+});
+</script>
+</body>
+</html>
